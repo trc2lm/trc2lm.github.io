@@ -923,7 +923,7 @@ code {
 }
 #tokenFlowCanvas {
   width: 100%;
-  height: 820px;
+  height: 1340px;
   display: block;
 }
 .canvas-legend {
@@ -1490,15 +1490,16 @@ code {
         <button id="btnLabels" class="active" onclick="toggleLabels()">Labels</button>
       </div>
       <div class="canvas-legend">
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#f472b6"></div>Neuromodulator</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#fbbf24"></div>Predictive Cortex</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#ff6b35"></div>Thalamic Router</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#4ecdc4"></div>Active Column</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:rgba(255,255,255,0.2)"></div>Inactive Column</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#a78bfa"></div>Hopfield Memory</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#34d399"></div>Dendritic Readout</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#fb923c"></div>CT Feedback</div>
-        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#45b7d1"></div>Cerebellar Δ</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#f472b6"></div>① Neuromod</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#60a5fa"></div>② Pred Cortex</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#fb923c"></div>③ Router</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#4ecdc4"></div>④ Cortex</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#a78bfa"></div>⑤ Hopfield</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#c4b5fd"></div>⑥ Dendritic</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#fbbf24"></div>⑦ CT Feedback</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#22d3ee"></div>⑧ Cerebellum</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:#f87171"></div>⑨ NE Gain</div>
+        <div class="canvas-legend-item"><div class="canvas-legend-dot" style="background:rgba(255,255,255,0.5)"></div>Token Flow</div>
       </div>
     </div>
   </div>
@@ -1864,494 +1865,388 @@ document.querySelectorAll('.nav-links a').forEach(a => {
   let showLabels = true;
   let speedMult = 1;
 
-  const COLS = 8;
-  const ACTIVE = [1, 3, 6];
-  const MEMORY_SLOTS = 5;
+  const NCOLS = 8, ACTIVE = [1, 3, 6];
 
   function resize() {
     dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
-    W = rect.width;
-    H = rect.height;
-    canvas.width = W * dpr;
-    canvas.height = H * dpr;
+    W = rect.width; H = rect.height;
+    canvas.width = W * dpr; canvas.height = H * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  resize();
-  window.addEventListener('resize', resize);
+  resize(); window.addEventListener('resize', resize);
 
-  /* ── Layout zones (recomputed per frame to handle resize) ── */
+  /* ── Color palette ── */
+  const CL = {
+    input:  {f:'rgba(253,224,71,0.10)',s:'rgba(253,224,71,0.45)',t:'rgba(253,224,71,0.85)'},
+    norm:   {f:'rgba(148,163,184,0.10)',s:'rgba(148,163,184,0.40)',t:'rgba(148,163,184,0.75)'},
+    neuro:  {f:'rgba(244,114,182,0.10)',s:'rgba(244,114,182,0.45)',t:'rgba(244,114,182,0.85)'},
+    pred:   {f:'rgba(96,165,250,0.10)', s:'rgba(96,165,250,0.40)', t:'rgba(96,165,250,0.80)'},
+    pad:    {f:'rgba(134,239,172,0.08)',s:'rgba(134,239,172,0.35)',t:'rgba(134,239,172,0.70)'},
+    router: {f:'rgba(251,146,60,0.12)', s:'rgba(251,146,60,0.50)', t:'rgba(251,146,60,0.90)'},
+    cortex: {f:'rgba(78,205,196,0.06)', s:'rgba(78,205,196,0.38)', t:'rgba(78,205,196,0.80)'},
+    cxSub:  {f:'rgba(78,205,196,0.04)', s:'rgba(78,205,196,0.22)', t:'rgba(78,205,196,0.60)'},
+    hopf:   {f:'rgba(167,139,250,0.08)',s:'rgba(167,139,250,0.40)',t:'rgba(167,139,250,0.80)'},
+    dend:   {f:'rgba(196,181,253,0.08)',s:'rgba(196,181,253,0.40)',t:'rgba(196,181,253,0.78)'},
+    dSub:   {f:'rgba(196,181,253,0.04)',s:'rgba(196,181,253,0.22)',t:'rgba(196,181,253,0.58)'},
+    ctfb:   {f:'rgba(251,191,36,0.10)', s:'rgba(251,191,36,0.45)', t:'rgba(251,191,36,0.85)'},
+    ctpass: {f:'rgba(251,191,36,0.06)', s:'rgba(251,191,36,0.28)', t:'rgba(251,191,36,0.62)'},
+    cereb:  {f:'rgba(34,211,238,0.10)', s:'rgba(34,211,238,0.45)', t:'rgba(34,211,238,0.85)'},
+    negain: {f:'rgba(248,113,113,0.12)',s:'rgba(248,113,113,0.50)',t:'rgba(248,113,113,0.88)'},
+    resid:  {f:'rgba(148,163,184,0.06)',s:'rgba(148,163,184,0.22)',t:'rgba(148,163,184,0.52)'},
+    ffn:    {f:'rgba(96,165,250,0.08)', s:'rgba(96,165,250,0.28)', t:'rgba(96,165,250,0.62)'},
+    w:'rgba(255,255,255,',
+  };
+
   function layout() {
-    // Three zones: left sidebar (memory), center (bars/columns), right sidebar (feedback+corrector)
-    const L = {
-      // Horizontal
-      memCX:   50,             // memory panel center-x
-      memW:    44,             // memory panel width
-      barX:    96,             // bars left edge
-      barW:    W - 250,        // bars width (leaves ~154px right)
-      skipX:   86,             // skip connection x
-      fbX:     W - 112,        // feedback loop x
-      corrX:   W - 62,        // corrector center x
-      // Vertical stages – generous spacing
-      input:   34,
-      norm:    66,
-      neuro:   112,
-      pred:    164,
-      router:  220,
-      colTop:  282,
-      colBot:  488,
-      dendrite:538,
-      lateral: 578,
-      gain:    636,
-      ffn:     688,
-      output:  738
+    const bx=100, bw=W-270, bh=26, bh2=22;
+    const mx=bx+bw/2, br=bx+bw;
+    return {
+      bx,bw,bh,bh2,mx,br,
+      hx:br+16, hw:Math.min(140,W-br-22),
+      input:28, norm:60, neuro:110, sigs:144,
+      pred:190, pad:240, router:292,
+      // Cortex container (expanded for columns)
+      cxTop:352, cxP1:376, cxP2:404, cxP3:432, cxP4:460,
+      colTop:486, colBot:588, cxBot:610,
+      // Dendritic
+      dTop:644, dN:668, dL:700, dBot:728,
+      yLbl:754,
+      ct:794, ct2:842,
+      cereb:902,
+      plus:956,
+      neGain:996,
+      res1:1044, norm2:1086, ffn:1126, res2:1170,
+      output:1214,
+      skipX:86, uPathX:74, fbLoopX:bx-22,
     };
-    L.midX  = L.barX + L.barW / 2;
-    L.barH  = 28;
-    L.barR  = L.barX + L.barW; // bar right edge
-    return L;
   }
 
-  function colX(i, L) {
-    const pad = 22;
-    return L.barX + pad + i * ((L.barW - pad * 2) / (COLS - 1));
-  }
+  /* ── Drawing helpers ── */
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();}
+  function bar(x,y,w,h,c,text,sz){rr(x,y,w,h,5);ctx.fillStyle=c.f;ctx.fill();ctx.strokeStyle=c.s;ctx.lineWidth=1;ctx.stroke();if(showLabels&&text){ctx.font=`600 ${sz||8}px "DM Mono","JetBrains Mono",monospace`;ctx.fillStyle=c.t;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x+w/2,y+h/2);}}
+  function lbl(x,y,text,color,align,sz){if(!showLabels)return;ctx.font=`500 ${sz||7.5}px "DM Mono","JetBrains Mono",monospace`;ctx.fillStyle=color||CL.w+'0.4)';ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(text,x,y);}
+  function cn(x1,y1,x2,y2,c,w,d){ctx.beginPath();if(d)ctx.setLineDash(d);ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=c;ctx.lineWidth=w||0.8;ctx.stroke();if(d)ctx.setLineDash([]);}
+  function arr(x,y,dir,sz,c){ctx.beginPath();if(dir==='d'){ctx.moveTo(x-sz,y-sz);ctx.lineTo(x,y);ctx.lineTo(x+sz,y-sz);}else if(dir==='r'){ctx.moveTo(x-sz,y-sz);ctx.lineTo(x,y);ctx.lineTo(x-sz,y+sz);}else if(dir==='l'){ctx.moveTo(x+sz,y-sz);ctx.lineTo(x,y);ctx.lineTo(x+sz,y+sz);}else{ctx.moveTo(x-sz,y+sz);ctx.lineTo(x,y);ctx.lineTo(x+sz,y+sz);}ctx.fillStyle=c;ctx.fill();}
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function colX(i,L){return L.bx+20+i*((L.bw-40)/(NCOLS-1));}
 
-  // ══════════════════════════════════════
-  // PARTICLE SYSTEMS
-  // ══════════════════════════════════════
-
-  class FlowParticle {
-    constructor() { this.reset(); }
-    reset() {
-      this.phase = 0;
-      this.col = ACTIVE[Math.floor(Math.random() * ACTIVE.length)];
-      this.t = Math.random();
-      this.speed = 0.003 + Math.random() * 0.004;
-      this.size = 1.8 + Math.random() * 1.5;
-      this.hue = Math.random() > 0.5 ? '78,205,196' : '255,107,53';
-      this.alpha = 1;
-    }
-    update() {
-      this.t += this.speed * speedMult;
-      if (this.t >= 1) { this.t = 0; this.phase++; if (this.phase > 7) this.reset(); }
-    }
-    getPos(L) {
-      const cx = colX(this.col, L);
-      const mx = L.midX;
-      switch (this.phase) {
-        case 0: return { x: mx + (cx - mx) * this.t * 0.15, y: L.input + (L.router - L.input) * this.t };
-        case 1: return { x: mx + (cx - mx) * (0.15 + this.t * 0.85), y: L.router + (L.colTop - L.router) * this.t };
-        case 2: return { x: cx + Math.sin(this.t * Math.PI * 5) * 5, y: L.colTop + (L.colBot - L.colTop) * this.t };
-        case 3: return { x: cx + (mx - cx) * this.t * 0.3, y: L.colBot + (L.dendrite - L.colBot) * this.t };
-        case 4: return { x: cx + (mx - cx) * (0.3 + this.t * 0.35), y: L.dendrite + (L.lateral - L.dendrite) * this.t };
-        case 5: return { x: cx + (mx - cx) * (0.65 + this.t * 0.35), y: L.lateral + (L.gain - L.lateral) * this.t };
-        case 6: return { x: mx, y: L.gain + (L.output - L.gain) * this.t };
-        case 7: this.alpha = 1 - this.t; return { x: mx, y: L.output + 18 * this.t };
-        default: return { x: mx, y: L.input };
+  /* ── Particle classes ── */
+  class MainP{
+    constructor(){this.reset();}
+    reset(){this.ph=0;this.t=Math.random();this.sp=0.0025+Math.random()*0.003;this.sz=1.5+Math.random()*1.2;this.a=1;this.col=ACTIVE[Math.floor(Math.random()*3)];this.hue=Math.random()>0.5?'78,205,196':'253,224,71';}
+    update(){this.t+=this.sp*speedMult;if(this.t>=1){this.t=0;this.ph++;if(this.ph>10)this.reset();}}
+    pos(L){
+      const m=L.mx,t=this.t,cx=colX(this.col,L);
+      switch(this.ph){
+        case 0:return{x:m,y:lerp(L.input,L.router+L.bh/2,t)};
+        case 1:{const s=Math.min(1,t*2);return{x:lerp(m,cx,s*0.8),y:lerp(L.router+L.bh/2,L.colTop,t)};}
+        case 2:return{x:cx+Math.sin(t*Math.PI*5)*5,y:lerp(L.colTop,L.colBot,t)};
+        case 3:return{x:lerp(cx,m,t*0.6),y:lerp(L.colBot,L.dBot,t)};
+        case 4:return{x:lerp(cx+(m-cx)*0.6,m,t),y:lerp(L.dBot,L.yLbl,t)};
+        case 5:return{x:m,y:lerp(L.yLbl,L.ct2+L.bh2/2,t)};
+        case 6:return{x:m,y:lerp(L.ct2+L.bh2/2,L.cereb+L.bh/2,t)};
+        case 7:return{x:m,y:lerp(L.cereb+L.bh/2,L.res1,t)};
+        case 8:return{x:m,y:lerp(L.res1,L.output,t)};
+        case 9:return{x:m,y:lerp(L.output,L.output+20,t)};
+        case 10:this.a=1-t;return{x:m,y:L.output+20+t*10};
+        default:return{x:m,y:L.input};
       }
     }
-    draw(L) {
-      const p = this.getPos(L);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.hue},${this.alpha * 0.85})`;
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, this.size * 3, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.hue},${this.alpha * 0.07})`;
-      ctx.fill();
+    draw(L){const p=this.pos(L);ctx.beginPath();ctx.arc(p.x,p.y,this.sz,0,Math.PI*2);ctx.fillStyle=`rgba(${this.hue},${this.a*0.8})`;ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,this.sz*2.5,0,Math.PI*2);ctx.fillStyle=`rgba(${this.hue},${this.a*0.06})`;ctx.fill();}
+  }
+  class HopP{
+    constructor(){this.reset();}
+    reset(){this.t=Math.random();this.sp=0.004+Math.random()*0.003;this.ph=Math.random()>0.5?0:1;this.sz=1.3;}
+    update(){this.t+=this.sp*speedMult;if(this.t>=1){this.t=0;this.ph=1-this.ph;}}
+    draw(L){
+      let x,y;const hcx=L.hx+L.hw/2,hcy=(L.colTop+L.colBot)/2;
+      if(this.ph===0){x=lerp(L.br,hcx,this.t);y=lerp(L.router+L.bh,hcy-20,this.t);}
+      else{x=lerp(hcx,L.br-4,this.t);y=lerp(hcy+20,(L.dTop+L.dBot)/2,this.t);}
+      ctx.beginPath();ctx.arc(x,y,this.sz,0,Math.PI*2);
+      ctx.fillStyle=`rgba(167,139,250,${0.5+Math.sin(this.t*Math.PI)*0.4})`;ctx.fill();
+    }
+  }
+  class CTP{
+    constructor(){this.reset();}
+    reset(){this.t=Math.random();this.sp=0.004+Math.random()*0.003;this.sz=1.2;}
+    update(){this.t+=this.sp*speedMult;if(this.t>=1)this.reset();}
+    draw(L){
+      const lx=L.fbLoopX,top=L.cxTop,bot=L.ct+L.bh/2;let x,y;
+      if(this.t<0.2){x=lerp(L.bx,lx,this.t/0.2);y=bot;}
+      else if(this.t<0.75){x=lx;y=lerp(bot,top,(this.t-0.2)/0.55);}
+      else{x=lerp(lx,L.bx,(this.t-0.75)/0.25);y=top;}
+      ctx.beginPath();ctx.arc(x,y,this.sz,0,Math.PI*2);
+      ctx.fillStyle=`rgba(251,191,36,${0.5+Math.sin(this.t*Math.PI*2)*0.35})`;ctx.fill();
     }
   }
 
-  class CorrectorParticle {
-    constructor() { this.reset(); }
-    reset() { this.t = Math.random(); this.speed = 0.004 + Math.random() * 0.003; this.size = 1.5 + Math.random(); }
-    update() { this.t += this.speed * speedMult; if (this.t >= 1) this.reset(); }
-    draw(L) {
-      const yy = (L.router + 30) + (L.gain - L.router - 40) * this.t;
-      ctx.beginPath();
-      ctx.arc(L.corrX, yy, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(69,183,209,${0.7 + Math.sin(this.t * Math.PI) * 0.3})`;
-      ctx.fill();
-    }
-  }
+  const mainP=Array.from({length:32},()=>new MainP());
+  const hpP=Array.from({length:7},()=>new HopP());
+  const ctP=Array.from({length:5},()=>new CTP());
 
-  class FeedbackParticle {
-    constructor() { this.reset(); }
-    reset() { this.t = Math.random(); this.speed = 0.005 + Math.random() * 0.003; this.size = 1.3; }
-    update() { this.t += this.speed * speedMult; if (this.t >= 1) this.reset(); }
-    draw(L) {
-      const xRight = L.fbX;
-      const yBot = L.lateral;
-      const yTop = L.router;
-      let x, y;
-      if (this.t < 0.25) {
-        const lt = this.t / 0.25;
-        x = L.barR + (xRight - L.barR) * lt;
-        y = yBot;
-      } else if (this.t < 0.70) {
-        const lt = (this.t - 0.25) / 0.45;
-        x = xRight;
-        y = yBot - (yBot - yTop) * lt;
-      } else {
-        const lt = (this.t - 0.70) / 0.30;
-        x = xRight - (xRight - L.barR) * lt;
-        y = yTop;
-      }
-      ctx.beginPath();
-      ctx.arc(x, y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(251,146,60,${0.6 + Math.sin(this.t * Math.PI * 2) * 0.3})`;
-      ctx.fill();
-    }
-  }
+  let time=0;
 
-  class MemoryParticle {
-    constructor() { this.reset(); }
-    reset() { this.t = Math.random(); this.speed = 0.006 + Math.random() * 0.004; this.slot = Math.floor(Math.random() * MEMORY_SLOTS); this.size = 1.2; }
-    update() { this.t += this.speed * speedMult; if (this.t >= 1) this.reset(); }
-    draw(L) {
-      const memTopY = L.colTop + 20;
-      const memBotY = L.colBot - 20;
-      const slotY = memTopY + 22 + this.slot * ((memBotY - memTopY - 44) / (MEMORY_SLOTS - 1));
-      const targetX = colX(ACTIVE[0], L) - 18;
-      const targetY = (L.colTop + L.colBot) / 2;
-      let x, y;
-      if (this.t < 0.4) {
-        x = L.memCX; y = slotY;
-        this.size = 1.2 + Math.sin(this.t / 0.4 * Math.PI) * 1.5;
-      } else {
-        const lt = (this.t - 0.4) / 0.6;
-        x = L.memCX + (targetX - L.memCX) * lt;
-        y = slotY + (targetY - slotY) * lt;
-      }
-      ctx.beginPath();
-      ctx.arc(x, y, this.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(167,139,250,${0.5 + Math.sin(this.t * Math.PI) * 0.4})`;
-      ctx.fill();
-    }
-  }
+  function draw(){
+    time+=0.016;
+    ctx.clearRect(0,0,W,H);
+    const L=layout();
+    const {bx,bw,bh,bh2,mx,br,hx,hw,skipX,uPathX,fbLoopX}=L;
 
-  const flowParticles = Array.from({ length: 42 }, () => new FlowParticle());
-  const corrParticles = Array.from({ length: 7 }, () => new CorrectorParticle());
-  const fbParticles   = Array.from({ length: 6 }, () => new FeedbackParticle());
-  const memParticles  = Array.from({ length: 7 }, () => new MemoryParticle());
+    // Bg glow
+    const g=ctx.createRadialGradient(mx,H*0.3,0,mx,H*0.3,W*0.6);
+    g.addColorStop(0,'rgba(78,205,196,0.03)');g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
 
-  let time = 0;
+    // ═══════════ INPUT ═══════════
+    bar(bx,L.input-bh/2,bw,bh,CL.input,'x ∈ ℝᴮˣᵀˣᵈ  —  Input Sequence',9);
+    cn(mx,L.input+bh/2,mx,L.norm-bh/2,CL.w+'0.1)');
 
-  // ── Drawing helpers ──
-  function rr(x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
-  }
+    // ═══════════ RMSNORM ═══════════
+    bar(bx,L.norm-bh/2,bw,bh,CL.norm,'RMSNorm   u = RMSNorm(x)',8.5);
+    cn(mx,L.norm+bh/2,mx,L.neuro-bh/2-2,CL.w+'0.1)');
 
-  function drawBar(x, y, w, h, fill, stroke, label, lcol) {
-    rr(x, y, w, h, 6);
-    ctx.fillStyle = fill; ctx.fill();
-    ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke();
-    if (showLabels && label) {
-      ctx.font = `600 ${h >= 28 ? 9.5 : 8}px "DM Mono","JetBrains Mono",monospace`;
-      ctx.fillStyle = lcol || stroke;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(label, x + w / 2, y + h / 2);
-    }
-  }
+    // ═══════════ ① NEUROMODULATOR ═══════════
+    bar(bx,L.neuro-bh/2,bw,bh+4,CL.neuro,'① NEUROMODULATOR   EMA(μ,σ²) · MLP(4d→3) · Sigmoid',8.5);
+    lbl(br+6,L.neuro,'aux[nm]',CL.neuro.t,'left',5.5);
 
-  function lbl(x, y, text, color, align, sz) {
-    if (!showLabels) return;
-    ctx.font = `500 ${sz || 8}px "DM Mono","JetBrains Mono",monospace`;
-    ctx.fillStyle = color || 'rgba(255,255,255,0.45)';
-    ctx.textAlign = align || 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, y);
-  }
-
-  function conn(x1, y1, x2, y2, color, w, dash) {
-    ctx.beginPath();
-    if (dash) ctx.setLineDash(dash);
-    ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-    ctx.strokeStyle = color; ctx.lineWidth = w || 1; ctx.stroke();
-    if (dash) ctx.setLineDash([]);
-  }
-
-  // ══════════════════════════════════════
-  // MAIN DRAW LOOP
-  // ══════════════════════════════════════
-  function draw() {
-    time += 0.016;
-    ctx.clearRect(0, 0, W, H);
-    const L = layout();
-    const { barX, barW, barH, barR, midX, memCX, memW: mW, fbX, corrX, skipX } = L;
-
-    // ── Background glow ──
-    const grd = ctx.createRadialGradient(midX, H * 0.4, 0, midX, H * 0.4, W * 0.55);
-    grd.addColorStop(0, 'rgba(78,205,196,0.04)');
-    grd.addColorStop(0.5, 'rgba(167,139,250,0.02)');
-    grd.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, W, H);
-
-    // ═══════════ STAGE 1: INPUT ═══════════
-    lbl(midX, L.input, 'X ∈ ℝᴮˣᵀˣᵈ  —  TOKEN INPUT', 'rgba(255,255,255,0.5)', 'center', 10);
-    conn(midX, L.input + 10, midX, L.norm - barH / 2 - 2, 'rgba(255,255,255,0.1)', 1);
-
-    // ═══════════ STAGE 2: RMSNORM ═══════════
-    drawBar(barX, L.norm - barH / 2, barW, barH, 'rgba(100,116,139,0.12)', 'rgba(100,116,139,0.4)',
-      'RMSNorm(X)  →  U', 'rgba(100,116,139,0.8)');
-    conn(midX, L.norm + barH / 2, midX, L.neuro - barH / 2 - 2, 'rgba(255,255,255,0.1)', 1);
-
-    // ═══════════ STAGE 3: NEUROMODULATOR ═══════════
-    drawBar(barX, L.neuro - barH / 2, barW, barH, 'rgba(244,114,182,0.1)', 'rgba(244,114,182,0.45)',
-      '① NEUROMODULATOR  →  sᵣₒᵤₜₑ · sₚᵣₑ · sᵍₐᵢₙ', 'rgba(244,114,182,0.85)');
-
-    // Signal indicators
-    const sigY = L.neuro + barH / 2 + 16;
-    const sigs = [
-      { lab: 'D (route)', col: '#ff6b35', dx: -90 },
-      { lab: 'ACh (pred)', col: '#4ecdc4', dx: 0 },
-      { lab: 'NE (gain)', col: '#fbbf24', dx: 90 }
+    // Signal dots
+    const dDotX=mx-90, achDotX=mx, neDotX=mx+90;
+    const sigData=[
+      {lab:'σ_D',sub:'surprise',col:'#fb923c',x:dDotX},
+      {lab:'σ_ACh',sub:'precision',col:'#4ecdc4',x:achDotX},
+      {lab:'σ_NE',sub:'gain',col:'#f87171',x:neDotX}
     ];
-    sigs.forEach((s, i) => {
-      const sx = midX + s.dx;
-      const pr = 4 + Math.sin(time * 2.5 + i * 2) * 2;
-      ctx.beginPath(); ctx.arc(sx, sigY, pr, 0, Math.PI * 2);
-      ctx.fillStyle = s.col + '44'; ctx.fill();
-      ctx.beginPath(); ctx.arc(sx, sigY, 3, 0, Math.PI * 2);
-      ctx.fillStyle = s.col; ctx.fill();
-      lbl(sx, sigY + 13, s.lab, s.col + '99', 'center', 6.5);
+    sigData.forEach((s,i)=>{
+      const sy=L.sigs;
+      const pr=4.5+Math.sin(time*2.5+i*2.1)*2;
+      ctx.beginPath();ctx.arc(s.x,sy,pr,0,Math.PI*2);ctx.fillStyle=s.col+'44';ctx.fill();
+      ctx.beginPath();ctx.arc(s.x,sy,3,0,Math.PI*2);ctx.fillStyle=s.col;ctx.fill();
+      lbl(s.x,sy+13,s.lab,s.col+'cc','center',7);
+      lbl(s.x,sy+23,s.sub,s.col+'77','center',5.5);
     });
-    conn(midX, sigY + 20, midX, L.pred - barH / 2 - 2, 'rgba(255,255,255,0.08)', 1);
 
-    // ═══════════ STAGE 4: PREDICTIVE CORTEX ═══════════
-    drawBar(barX, L.pred - barH / 2, barW, barH, 'rgba(251,191,36,0.1)', 'rgba(251,191,36,0.45)',
-      '② PREDICTIVE CODING   Û = U − (1−sₚᵣₑ)·P̃', 'rgba(251,191,36,0.85)');
-    lbl(barR + 6, L.pred, 'ℒₚᵣₑ', 'rgba(251,191,36,0.45)', 'left', 7);
-    conn(midX, L.pred + barH / 2, midX, L.router - barH / 2 - 4, 'rgba(255,255,255,0.1)', 1);
+    // ── σ_ACh → Predictive Coding (main flow center) ──
+    cn(mx,L.sigs+28,mx,L.pred-bh/2-2,CL.w+'0.08)');
+    lbl(mx+48,L.sigs+34,'σ_ACh →',CL.pred.t,'center',5.5);
 
-    // ═══════════ STAGE 5: THALAMIC ROUTER ═══════════
-    const routerH = 32;
-    drawBar(barX, L.router - routerH / 2, barW, routerH, 'rgba(255,107,53,0.12)', 'rgba(255,107,53,0.5)',
-      '③ THALAMIC ROUTER  ·  chunk → Q·Kᵀ + topo-2D → top-k', 'rgba(255,107,53,0.9)');
-    lbl(barR + 6, L.router, 'ℒᵣₒᵤₜₑ', 'rgba(255,107,53,0.45)', 'left', 7);
+    // ── σ_D → Router: from D dot, down vertically, then right into router bar ──
+    cn(dDotX,L.sigs+8,dDotX,L.router,'rgba(251,146,60,0.22)',0.7,[2,4]);
+    cn(dDotX,L.router,bx,L.router,'rgba(251,146,60,0.18)',0.7,[2,4]);
+    arr(bx,L.router,'r',2.5,'rgba(251,146,60,0.3)');
+    lbl(dDotX-12,(L.sigs+8+L.router)/2,'σ_D','rgba(251,146,60,0.4)','center',5.5);
+    lbl(dDotX-12,(L.sigs+8+L.router)/2+10,'temp','rgba(251,146,60,0.3)','center',5);
 
-    // Topology grid hint (safely above router, inside bar area)
-    if (showLabels) {
-      const gx = barX + barW - 60;
-      const gy = L.router - routerH / 2 + 5;
-      for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
-        const on = (r === 0 && c === 1) || (r === 1 && c === 0) || (r === 2 && c === 2);
-        ctx.beginPath(); ctx.arc(gx + c * 8, gy + r * 8, 2, 0, Math.PI * 2);
-        ctx.fillStyle = on ? 'rgba(255,107,53,0.75)' : 'rgba(255,107,53,0.2)'; ctx.fill();
+    // ── σ_NE → NE Gain: from NE dot, right to br+6, down vertically, left into NE gain bar ──
+    const nePathX=br+6;
+    cn(neDotX,L.sigs+8,neDotX,L.sigs+28,'rgba(248,113,113,0.2)',0.7,[2,4]);
+    cn(neDotX,L.sigs+28,nePathX,L.sigs+28,'rgba(248,113,113,0.18)',0.6,[2,4]);
+    cn(nePathX,L.sigs+28,nePathX,L.neGain,'rgba(248,113,113,0.15)',0.7,[2,5]);
+    cn(nePathX,L.neGain,br,L.neGain,'rgba(248,113,113,0.2)',0.7,[2,4]);
+    arr(br,L.neGain,'l',2.5,'rgba(248,113,113,0.35)');
+    ctx.save();ctx.translate(nePathX+10,(L.sigs+28+L.neGain)/2);ctx.rotate(-Math.PI/2);
+    lbl(0,0,'σ_NE → gain','rgba(248,113,113,0.25)','center',5.5);
+    ctx.restore();
+    // NE particles along the path
+    for(let i=0;i<3;i++){
+      const t2=((time*0.12)+i*0.33)%1;
+      const ny=lerp(L.sigs+28,L.neGain,t2);
+      ctx.beginPath();ctx.arc(nePathX,ny,1.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(248,113,113,${0.35+Math.sin(t2*Math.PI)*0.3})`;ctx.fill();
+    }
+
+    // ═══════════ ② PREDICTIVE CORTEX ═══════════
+    bar(bx,L.pred-bh/2,bw,bh+2,CL.pred,'② PREDICTIVE CODING   û = u − (1−σ_ACh)·p̂',8.5);
+    lbl(br+6,L.pred,'aux[pred]',CL.pred.t,'left',5.5);
+    cn(mx,L.pred+bh/2+1,mx,L.pad-bh2/2-2,CL.w+'0.08)');
+
+    // ═══════════ PAD & CHUNK ═══════════
+    bar(bx,L.pad-bh2/2,bw,bh2,CL.pad,'Pad & Chunk → u_pad, u_chunks (B,nc,C,d), u_pool',7.5);
+    cn(mx,L.pad+bh2/2,mx,L.router-bh/2-4,CL.w+'0.08)');
+
+    // ═══════════ ③ THALAMIC ROUTER ═══════════
+    bar(bx,L.router-bh/2-2,bw,bh+8,CL.router,'③ TOP-k ROUTING (D-modulated)   q·Kᵀ + topo 2D → top-k=4 of M=64',8.5);
+    lbl(br+6,L.router,'aux[route]',CL.router.t,'left',5.5);
+
+    // Router sub-labels
+    if(showLabels){
+      const ry=L.router+bh/2+8,subs=['2-D proximity bias','softmax(top-k)','k=4 of M=64'],sw=bw/3-6;
+      subs.forEach((s,i)=>{const sx=bx+3+i*(sw+4);rr(sx,ry,sw,14,3);ctx.fillStyle='rgba(251,146,60,0.05)';ctx.fill();ctx.strokeStyle='rgba(251,146,60,0.18)';ctx.lineWidth=0.5;ctx.stroke();lbl(sx+sw/2,ry+7,s,'rgba(251,146,60,0.5)','center',5.5);});
+    }
+
+    // u_pool → Hopfield (horizontal right from router to Hopfield panel)
+    cn(br,L.router,hx,L.router,'rgba(167,139,250,0.2)',0.8,[3,3]);
+    lbl((br+hx)/2,L.router-8,'u_pool','rgba(167,139,250,0.4)','center',6);
+    arr(hx-1,L.router,'r',3,'rgba(167,139,250,0.3)');
+
+    // Router → Cortex
+    cn(mx,L.router+bh/2+22,mx,L.cxTop,CL.w+'0.08)');
+    arr(mx,L.cxTop,'d',3,CL.w+'0.15)');
+
+    // ═══════════ ⑤ HOPFIELD (right panel) ═══════════
+    const hfy1=L.router+28, hfy2=L.colBot+14;
+    rr(hx,hfy1,hw,hfy2-hfy1,8);
+    ctx.fillStyle=CL.hopf.f;ctx.fill();ctx.strokeStyle=CL.hopf.s;ctx.lineWidth=1;ctx.stroke();
+    lbl(hx+hw/2,hfy1+14,'⑤ ASSOCIATIVE MEMORY',CL.hopf.t,'center',7);
+    lbl(hx+hw/2,hfy1+28,'Hopfield Network',CL.hopf.t,'center',6.5);
+    for(let s=0;s<5;s++){
+      const sy=hfy1+48+s*((hfy2-hfy1-78)/5);
+      const pr=3+Math.sin(time*1.6+s*1.3)*1.5;
+      ctx.beginPath();ctx.arc(hx+hw/2-12,sy,pr,0,Math.PI*2);ctx.fillStyle=`rgba(167,139,250,${0.2+Math.sin(time*1.6+s*1.3)*0.15})`;ctx.fill();
+      ctx.beginPath();ctx.arc(hx+hw/2-12,sy,2,0,Math.PI*2);ctx.fillStyle='rgba(167,139,250,0.6)';ctx.fill();
+      lbl(hx+hw/2+4,sy,'Ξ'+s,'rgba(167,139,250,0.3)','left',5);
+    }
+    lbl(hx+hw/2,hfy2-16,'β=8 · 64 engrams','rgba(167,139,250,0.35)','center',5.5);
+
+    // hpc_ctx → dendritic (from Hopfield panel bottom, down then left into dendritic bar)
+    const hpcMid=(hfy2+L.dTop)/2;
+    cn(hx+hw/2,hfy2,hx+hw/2,hpcMid,'rgba(167,139,250,0.18)',0.7,[3,3]);
+    cn(hx+hw/2,hpcMid,br,(L.dTop+L.dBot)/2,'rgba(167,139,250,0.18)',0.7,[3,3]);
+    arr(br,(L.dTop+L.dBot)/2,'l',3,'rgba(167,139,250,0.3)');
+    lbl(hx+hw/2+8,hpcMid+8,'hpc_ctx','rgba(167,139,250,0.35)','left',5.5);
+    lbl(br+5,(L.dTop+L.dBot)/2-8,'apical ↓','rgba(167,139,250,0.3)','left',5);
+
+    // ═══════════ ④ CORTEX (container w/ sub-stages + columns) ═══════════
+    rr(bx-4,L.cxTop,bw+8,L.cxBot-L.cxTop,10);
+    ctx.fillStyle=CL.cortex.f;ctx.fill();ctx.strokeStyle=CL.cortex.s;ctx.lineWidth=1.2;ctx.stroke();
+    lbl(bx+6,L.cxTop+10,'④ PARALLEL CORTEX','rgba(78,205,196,0.6)','left',7);
+
+    // Sub-stage bars
+    bar(bx+12,L.cxP1-bh2/2,bw-24,bh2,CL.cxSub,'Linear Projection → Gather k-of-M',7);
+    cn(mx,L.cxP1+bh2/2,mx,L.cxP2-bh2/2-1,CL.w+'0.05)',0.5);
+    bar(bx+12,L.cxP2-bh2/2,bw-24,bh2,CL.cxSub,'EI Gating (SST · PV · VIP interneurons)',7);
+    cn(mx,L.cxP2+bh2/2,mx,L.cxP3-bh2/2-1,CL.w+'0.05)',0.5);
+    bar(bx+12,L.cxP3-bh2/2,bw-24,bh2,CL.cxSub,'Adaptive Membrane + Causal Filtering',7);
+    cn(mx,L.cxP3+bh2/2,mx,L.cxP4-bh2/2-1,CL.w+'0.05)',0.5);
+    bar(bx+12,L.cxP4-bh2/2,bw-24,bh2,CL.cxSub,'Readout + PV Gate + D-Skip → weighted sum',7);
+
+    // ── COLUMN VISUALIZATION ──
+    for(let i=0;i<NCOLS;i++){
+      const isA=ACTIVE.includes(i), cx=colX(i,L);
+      cn(cx,L.cxP4+bh2/2+2,cx,L.colTop,isA?'rgba(251,146,60,0.3)':'rgba(255,255,255,0.04)',isA?1:0.5);
+      if(isA)arr(cx,L.colTop,'d',2.5,'rgba(251,146,60,0.35)');
+    }
+    const cw=32, ch=L.colBot-L.colTop;
+    for(let i=0;i<NCOLS;i++){
+      const isA=ACTIVE.includes(i), cx=colX(i,L);
+      rr(cx-cw/2,L.colTop,cw,ch,6);
+      ctx.fillStyle=isA?'rgba(78,205,196,0.06)':'rgba(255,255,255,0.015)';ctx.fill();
+      ctx.strokeStyle=isA?'rgba(78,205,196,0.35)':'rgba(255,255,255,0.06)';ctx.lineWidth=isA?1.2:0.5;ctx.stroke();
+      if(isA){
+        const gy=L.colTop+16;
+        const es=3+Math.sin(time*3+i*1.5)*1.2;
+        ctx.beginPath();ctx.arc(cx-6,gy,es,0,Math.PI*2);ctx.fillStyle=`rgba(52,211,153,${0.3+Math.sin(time*3+i)*0.18})`;ctx.fill();
+        ctx.beginPath();ctx.arc(cx+6,gy,2.2,0,Math.PI*2);ctx.fillStyle=`rgba(239,68,68,${0.25+Math.sin(time*2.5+i*2)*0.18})`;ctx.fill();
+        lbl(cx-6,gy+9,'E','rgba(52,211,153,0.45)','center',5);
+        lbl(cx+6,gy+9,'I','rgba(239,68,68,0.4)','center',5);
+        const ssmY=L.colTop+38, sH=16+Math.sin(time*2+i*0.7)*5;
+        rr(cx-8,ssmY,16,sH,3);ctx.fillStyle=`rgba(78,205,196,${0.1+Math.sin(time*2+i)*0.05})`;ctx.fill();ctx.strokeStyle='rgba(78,205,196,0.2)';ctx.lineWidth=0.5;ctx.stroke();
+        lbl(cx,ssmY+sH/2,'SSM','rgba(78,205,196,0.45)','center',5.5);
+        const mY=ssmY+sH+10;
+        ctx.beginPath();ctx.moveTo(cx-10,mY);for(let t=0;t<=1;t+=0.08)ctx.lineTo(cx-10+t*20,mY+Math.sin(t*Math.PI*3+time*3+i)*3);
+        ctx.strokeStyle=`rgba(78,205,196,${0.3+Math.sin(time*1.5+i)*0.12})`;ctx.lineWidth=0.7;ctx.stroke();
+        const vY=mY+14;
+        ctx.beginPath();ctx.arc(cx,vY,3,0,Math.PI*2);ctx.fillStyle=`rgba(167,139,250,${0.28+Math.sin(time*2.2+i*1.7)*0.2})`;ctx.fill();
+        lbl(cx,vY+9,'VIP','rgba(167,139,250,0.35)','center',5);
+        const rY=L.colBot-18;
+        rr(cx-8,rY,16,10,2);ctx.fillStyle='rgba(52,211,153,0.06)';ctx.fill();ctx.strokeStyle='rgba(52,211,153,0.2)';ctx.lineWidth=0.4;ctx.stroke();
+        lbl(cx,rY+5,'Rₒ','rgba(52,211,153,0.4)','center',5);
       }
+      lbl(cx,L.colBot+10,'C'+i,isA?'rgba(78,205,196,0.6)':'rgba(255,255,255,0.1)','center',7);
+      if(isA){const rw=[0.45,0.30,0.25][ACTIVE.indexOf(i)];lbl(cx,L.colBot+20,'R='+rw.toFixed(2),'rgba(251,146,60,0.35)','center',5.5);}
+    }
+    cn(mx,L.cxBot,mx,L.dTop,CL.w+'0.08)');
+
+    // ═══════════ ⑥ DENDRITIC READOUT ═══════════
+    rr(bx-4,L.dTop,bw+8,L.dBot-L.dTop,10);
+    ctx.fillStyle=CL.dend.f;ctx.fill();ctx.strokeStyle=CL.dend.s;ctx.lineWidth=1.2;ctx.stroke();
+    lbl(bx+6,L.dTop+10,'⑥ DENDRITIC READOUT','rgba(196,181,253,0.55)','left',7);
+    bar(bx+12,L.dN-bh2/2,bw-24,bh2,CL.dSub,'Two-Compartment Neuron   basal ⊙ (1 + plateau)',7);
+    cn(mx,L.dN+bh2/2,mx,L.dL-bh2/2-1,CL.w+'0.05)',0.5);
+    bar(bx+12,L.dL-bh2/2,bw-24,bh2,CL.dSub,'Lateral Cortical Propagation + hpc_ctx',7);
+    cn(mx,L.dBot,mx,L.yLbl-6,CL.w+'0.08)');
+
+    // ── y label ──
+    lbl(mx,L.yLbl,'y (B, T, d)',CL.w+'0.5)','center',9);
+    cn(mx,L.yLbl+8,mx,L.ct-bh/2-2,CL.w+'0.08)');
+
+    // ═══════════ ⑦ CT FEEDBACK ═══════════
+    bar(bx,L.ct-bh/2,bw,bh+2,CL.ctfb,'⑦ CT FEEDBACK   w\' = Softmax(l_topk + tanh(α_ct)·fb_sel)',8);
+    cn(mx,L.ct+bh/2+1,mx,L.ct2-bh2/2-2,CL.w+'0.08)');
+    bar(bx,L.ct2-bh2/2,bw,bh2,CL.ctpass,'Cortex (2nd pass, refined w\')   full re-run → y',7.5);
+
+    // CT feedback loop (left side: from CT bar left edge, left to margin, up to cortex top, right back in)
+    ctx.setLineDash([4,3]);ctx.beginPath();
+    ctx.moveTo(bx,L.ct);ctx.lineTo(fbLoopX,L.ct);ctx.lineTo(fbLoopX,L.cxTop);ctx.lineTo(bx,L.cxTop);
+    ctx.strokeStyle='rgba(251,191,36,0.22)';ctx.lineWidth=1.2;ctx.stroke();ctx.setLineDash([]);
+    arr(bx-1,L.cxTop,'r',3,'rgba(251,191,36,0.3)');
+    lbl(fbLoopX-10,(L.ct+L.cxTop)/2-4,'w\' → 2nd','rgba(251,191,36,0.3)','center',5.5);
+    lbl(fbLoopX-10,(L.ct+L.cxTop)/2+6,'cortex pass','rgba(251,191,36,0.3)','center',5.5);
+
+    cn(mx,L.ct2+bh2/2,mx,L.cereb-bh/2-4,CL.w+'0.08)');
+
+    // ═══════════ ⑧ CEREBELLAR CORRECTOR ═══════════
+    bar(bx,L.cereb-bh/2-2,bw,bh+6,CL.cereb,'⑧ CEREBELLAR CORRECTOR   z=SiLU(W_z·[u‖y])  Δ=einsum(z,V,U)  rank-r=8',8);
+
+    // u path to cerebellum (left side: from norm bar left edge, out to left margin, down, back into cereb bar)
+    cn(bx,L.norm,uPathX,L.norm,'rgba(34,211,238,0.15)',0.7,[2,5]);
+    cn(uPathX,L.norm,uPathX,L.cereb,'rgba(34,211,238,0.15)',0.7,[2,5]);
+    cn(uPathX,L.cereb,bx,L.cereb,'rgba(34,211,238,0.15)',0.7,[2,5]);
+    arr(bx,L.cereb,'r',2.5,'rgba(34,211,238,0.3)');
+    ctx.save();ctx.translate(uPathX-8,(L.norm+L.cereb)/2);ctx.rotate(-Math.PI/2);
+    lbl(0,0,'u (from RMSNorm)','rgba(34,211,238,0.22)','center',5.5);
+    ctx.restore();
+    // u-path particles
+    for(let i=0;i<3;i++){
+      const t2=((time*0.1)+i*0.33)%1;
+      ctx.beginPath();ctx.arc(uPathX,lerp(L.norm,L.cereb,t2),1.2,0,Math.PI*2);
+      ctx.fillStyle=`rgba(34,211,238,${0.3+Math.sin(t2*Math.PI)*0.3})`;ctx.fill();
     }
 
-    // ── Router → Column connections ──
-    for (let i = 0; i < COLS; i++) {
-      const isA = ACTIVE.includes(i);
-      const cx = colX(i, L);
-      conn(cx, L.router + routerH / 2, cx, L.colTop,
-        isA ? 'rgba(255,107,53,0.35)' : 'rgba(255,255,255,0.04)', isA ? 1.5 : 0.5);
-      if (isA) {
-        ctx.beginPath(); ctx.moveTo(cx - 3, L.colTop - 2);
-        ctx.lineTo(cx, L.colTop + 2); ctx.lineTo(cx + 3, L.colTop - 2);
-        ctx.fillStyle = 'rgba(255,107,53,0.4)'; ctx.fill();
-      }
-    }
+    cn(mx,L.cereb+bh/2+4,mx,L.plus-10,CL.w+'0.08)');
 
-    // ═══════════ ASSOCIATIVE MEMORY (LEFT PANEL) ═══════════
-    const memTopY = L.colTop + 16;
-    const memBotY = L.colBot - 16;
-    rr(memCX - mW / 2, memTopY, mW, memBotY - memTopY, 8);
-    ctx.fillStyle = 'rgba(167,139,250,0.07)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(167,139,250,0.3)'; ctx.lineWidth = 1; ctx.stroke();
+    // ⊕ y + Δ
+    ctx.beginPath();ctx.arc(mx,L.plus,10,0,Math.PI*2);ctx.fillStyle='rgba(34,211,238,0.06)';ctx.fill();ctx.strokeStyle='rgba(34,211,238,0.35)';ctx.lineWidth=1;ctx.stroke();
+    lbl(mx,L.plus,'+','rgba(34,211,238,0.8)','center',10);
+    lbl(mx+26,L.plus,'y + Δ',CL.w+'0.4)','left',7);
+    cn(mx,L.plus+10,mx,L.neGain-bh/2-2,CL.w+'0.08)');
 
-    lbl(memCX, memTopY - 12, '④ HOPFIELD MEM', 'rgba(167,139,250,0.65)', 'center', 6.5);
+    // ═══════════ ⑨ NE GAIN ═══════════
+    bar(bx,L.neGain-bh/2,bw,bh,CL.negain,'⑨ GLOBAL GAIN   y = y · (1 + r_NE·(2σ_NE − 1))',8.5);
+    cn(mx,L.neGain+bh/2,mx,L.res1-bh2/2-2,CL.w+'0.08)');
 
-    for (let s = 0; s < MEMORY_SLOTS; s++) {
-      const sy = memTopY + 22 + s * ((memBotY - memTopY - 44) / (MEMORY_SLOTS - 1));
-      const pr = 3 + Math.sin(time * 1.8 + s * 1.2) * 1.5;
-      ctx.beginPath(); ctx.arc(memCX, sy, pr, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(167,139,250,${0.2 + Math.sin(time * 1.8 + s * 1.2) * 0.15})`; ctx.fill();
-      ctx.beginPath(); ctx.arc(memCX, sy, 2, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(167,139,250,0.65)'; ctx.fill();
-      lbl(memCX + 16, sy, 'Ξ' + s, 'rgba(167,139,250,0.3)', 'left', 5.5);
-    }
-    // Dashed retrieval line to first active column
-    const memMidY = (memTopY + memBotY) / 2;
-    conn(memCX + mW / 2, memMidY, colX(ACTIVE[0], L) - 20, memMidY, 'rgba(167,139,250,0.18)', 0.8, [3, 3]);
-    lbl((memCX + mW / 2 + colX(ACTIVE[0], L) - 20) / 2, memMidY - 10, 'Cᵐᵉᵐ', 'rgba(167,139,250,0.38)', 'center', 6.5);
+    // ═══════════ BOTTOM PIPELINE ═══════════
+    bar(bx,L.res1-bh2/2,bw,bh2,CL.resid,'(+) Residual + Dropout   x = x + drop(y + Δ)',7.5);
+    cn(mx,L.res1+bh2/2,mx,L.norm2-bh2/2-2,CL.w+'0.06)');
+    bar(bx,L.norm2-bh2/2,bw,bh2,CL.norm,'RMSNorm',7.5);
+    cn(mx,L.norm2+bh2/2,mx,L.ffn-bh/2-2,CL.w+'0.06)');
+    bar(bx,L.ffn-bh/2,bw,bh,CL.ffn,'SwiGLU Feed-Forward MLP   d_ff = 4·d',8);
+    cn(mx,L.ffn+bh/2,mx,L.res2-bh2/2-2,CL.w+'0.06)');
+    bar(bx,L.res2-bh2/2,bw,bh2,CL.resid,'(+) Residual + Dropout   x = x + drop(mlp(norm2(x)))',7.5);
+    cn(mx,L.res2+bh2/2,mx,L.output-bh/2-2,CL.w+'0.08)');
+    bar(bx,L.output-bh/2,bw,bh,CL.input,'x_out ∈ ℝᴮˣᵀˣᵈ  —  return x_out, aux_dict',9);
 
-    // ═══════════ CORTICAL COLUMNS ═══════════
-    for (let i = 0; i < COLS; i++) {
-      const isA = ACTIVE.includes(i);
-      const cx = colX(i, L);
-      const cw = 36;
-      const ch = L.colBot - L.colTop;
-
-      rr(cx - cw / 2, L.colTop, cw, ch, 7);
-      ctx.fillStyle = isA ? 'rgba(78,205,196,0.07)' : 'rgba(255,255,255,0.015)';
-      ctx.fill();
-      ctx.strokeStyle = isA ? 'rgba(78,205,196,0.4)' : 'rgba(255,255,255,0.06)';
-      ctx.lineWidth = isA ? 1.5 : 0.5;
-      ctx.stroke();
-
-      if (isA) {
-        // E/I gating
-        const gy = L.colTop + 22;
-        const es = 3.5 + Math.sin(time * 3 + i * 1.5) * 1.2;
-        ctx.beginPath(); ctx.arc(cx - 7, gy, es, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(52,211,153,${0.35 + Math.sin(time * 3 + i) * 0.2})`; ctx.fill();
-        lbl(cx - 7, gy + 10, 'E', 'rgba(52,211,153,0.55)', 'center', 5.5);
-        ctx.beginPath(); ctx.arc(cx + 7, gy, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239,68,68,${0.3 + Math.sin(time * 2.5 + i * 2) * 0.2})`; ctx.fill();
-        lbl(cx + 7, gy + 10, 'I', 'rgba(239,68,68,0.45)', 'center', 5.5);
-
-        // SSM state
-        const ssmY = L.colTop + 52;
-        const sH = 22 + Math.sin(time * 2 + i * 0.7) * 6;
-        rr(cx - 9, ssmY, 18, sH, 3);
-        ctx.fillStyle = `rgba(78,205,196,${0.12 + Math.sin(time * 2 + i) * 0.06})`; ctx.fill();
-        ctx.strokeStyle = 'rgba(78,205,196,0.25)'; ctx.lineWidth = 0.5; ctx.stroke();
-        lbl(cx, ssmY + sH / 2, 'SSM', 'rgba(78,205,196,0.5)', 'center', 6);
-
-        // Adaptive membrane wave
-        const mY = ssmY + sH + 14;
-        ctx.beginPath(); ctx.moveTo(cx - 10, mY);
-        for (let t = 0; t <= 1; t += 0.06) {
-          ctx.lineTo(cx - 10 + t * 20, mY + Math.sin(t * Math.PI * 3 + time * 3 + i) * 3.5);
-        }
-        ctx.strokeStyle = `rgba(78,205,196,${0.35 + Math.sin(time * 1.5 + i) * 0.15})`; ctx.lineWidth = 0.8; ctx.stroke();
-        lbl(cx, mY + 10, 'α·A', 'rgba(78,205,196,0.35)', 'center', 5.5);
-
-        // VIP disinhibition
-        const vY = mY + 24;
-        ctx.beginPath(); ctx.arc(cx, vY, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(167,139,250,${0.3 + Math.sin(time * 2.2 + i * 1.7) * 0.22})`; ctx.fill();
-        lbl(cx, vY + 10, 'VIP', 'rgba(167,139,250,0.4)', 'center', 5.5);
-
-        // Readout
-        const rY = L.colBot - 28;
-        rr(cx - 9, rY, 18, 12, 3);
-        ctx.fillStyle = 'rgba(52,211,153,0.08)'; ctx.fill();
-        ctx.strokeStyle = 'rgba(52,211,153,0.25)'; ctx.lineWidth = 0.5; ctx.stroke();
-        lbl(cx, rY + 6, 'Rₒ', 'rgba(52,211,153,0.45)', 'center', 5.5);
-      }
-
-      // Column label below
-      lbl(cx, L.colBot + 13, 'C' + i, isA ? 'rgba(78,205,196,0.65)' : 'rgba(255,255,255,0.12)', 'center', 7.5);
-      // Routing weight
-      if (isA) {
-        const rw = [0.45, 0.30, 0.25][ACTIVE.indexOf(i)];
-        lbl(cx, L.colBot + 25, 'R=' + rw.toFixed(2), 'rgba(255,107,53,0.4)', 'center', 6);
-      }
-    }
-
-    // Column → Dendrite lines
-    for (const i of ACTIVE) {
-      conn(colX(i, L), L.colBot, colX(i, L), L.dendrite - 14, 'rgba(78,205,196,0.18)', 1);
-    }
-
-    // ═══════════ DENDRITIC READOUT ═══════════
-    const smallH = 24;
-    drawBar(barX, L.dendrite - smallH / 2, barW, smallH, 'rgba(52,211,153,0.07)', 'rgba(52,211,153,0.35)',
-      '⑤ DENDRITIC READOUT  ·  basal ⊙ (1 + apical)', 'rgba(52,211,153,0.75)');
-    conn(midX, L.dendrite + smallH / 2, midX, L.lateral - smallH / 2 - 2, 'rgba(255,255,255,0.08)', 1);
-
-    // ═══════════ LATERAL PROPAGATION ═══════════
-    drawBar(barX, L.lateral - smallH / 2, barW, smallH, 'rgba(99,102,241,0.07)', 'rgba(99,102,241,0.3)',
-      'LATERAL CORTICAL PROPAGATION  ·  chunk-causal conv', 'rgba(99,102,241,0.65)');
-    conn(midX, L.lateral + smallH / 2, midX, L.gain - barH / 2 - 2, 'rgba(255,255,255,0.08)', 1);
-
-    // ═══════════ CT FEEDBACK (RIGHT SIDEBAR) ═══════════
-    // Vertical line
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(fbX, L.lateral + smallH / 2);
-    ctx.lineTo(fbX, L.router - routerH / 2);
-    ctx.strokeStyle = 'rgba(251,146,60,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
-    ctx.setLineDash([]);
-    // Horizontal taps
-    conn(barR, L.lateral, fbX, L.lateral + smallH / 2, 'rgba(251,146,60,0.12)', 0.8, [3, 3]);
-    conn(fbX, L.router, barR, L.router, 'rgba(251,146,60,0.12)', 0.8, [3, 3]);
-    // Label
-    ctx.save();
-    ctx.translate(fbX + 14, (L.lateral + L.router) / 2);
-    ctx.rotate(-Math.PI / 2);
-    lbl(0, 0, '⑥ CT FEEDBACK → R′', 'rgba(251,146,60,0.5)', 'center', 7);
+    // ═══════════ RESIDUAL SKIP x (left: norm → res1) ═══════════
+    ctx.setLineDash([2,4]);ctx.beginPath();
+    ctx.moveTo(skipX,L.norm+bh/2);ctx.lineTo(skipX-12,L.norm+bh/2);ctx.lineTo(skipX-12,L.res1);ctx.lineTo(skipX,L.res1);
+    ctx.strokeStyle=CL.w+'0.1)';ctx.lineWidth=0.8;ctx.stroke();ctx.setLineDash([]);
+    arr(skipX-1,L.res1,'r',2.5,CL.w+'0.15)');
+    ctx.save();ctx.translate(skipX-22,(L.norm+L.res1)/2);ctx.rotate(-Math.PI/2);
+    lbl(0,0,'RESIDUAL SKIP (x)',CL.w+'0.1)','center',5.5);
     ctx.restore();
 
-    // ═══════════ CEREBELLAR CORRECTOR (FAR RIGHT) ═══════════
-    const cTopY = L.router + routerH;
-    const cBotY = L.gain - barH / 2;
-    // Vertical dashed
-    ctx.setLineDash([3, 5]);
-    ctx.beginPath(); ctx.moveTo(corrX, cTopY); ctx.lineTo(corrX, cBotY);
-    ctx.strokeStyle = 'rgba(69,183,209,0.3)'; ctx.lineWidth = 1.3; ctx.stroke();
-    ctx.setLineDash([]);
-    // Box
-    const bxH = 56;
-    const bxY = (cTopY + cBotY) / 2 - bxH / 2;
-    rr(corrX - 22, bxY, 44, bxH, 6);
-    ctx.fillStyle = 'rgba(69,183,209,0.05)'; ctx.fill();
-    ctx.strokeStyle = 'rgba(69,183,209,0.25)'; ctx.lineWidth = 0.8; ctx.stroke();
-    lbl(corrX, bxY + 12, '⑦ FAST', 'rgba(69,183,209,0.55)', 'center', 6.5);
-    lbl(corrX, bxY + 24, 'CORRECTOR', 'rgba(69,183,209,0.55)', 'center', 6);
-    lbl(corrX, bxY + 38, 'Δ = VUᵀ', 'rgba(69,183,209,0.5)', 'center', 6);
-    lbl(corrX, bxY + bxH + 10, 'rank-r', 'rgba(69,183,209,0.3)', 'center', 5.5);
-    // Connection to gain bar
-    conn(corrX, cBotY, barR - 20, L.gain, 'rgba(69,183,209,0.12)', 0.8, [3, 3]);
-
-    // ═══════════ GLOBAL GAIN + RESIDUAL ═══════════
-    drawBar(barX, L.gain - barH / 2, barW, barH, 'rgba(251,191,36,0.06)', 'rgba(251,191,36,0.3)',
-      '⑧ GLOBAL GAIN  gᵍₐᵢₙ ⊙ Y  +  Δ  →  RESIDUAL + DROP', 'rgba(251,191,36,0.7)');
-    conn(midX, L.gain + barH / 2, midX, L.ffn - barH / 2 - 2, 'rgba(255,255,255,0.08)', 1);
-
-    // ═══════════ SwiGLU FFN ═══════════
-    drawBar(barX, L.ffn - barH / 2, barW, barH, 'rgba(255,255,255,0.03)', 'rgba(255,255,255,0.18)',
-      'RMSNorm → SwiGLU FFN → RESIDUAL + DROP', 'rgba(255,255,255,0.5)');
-    conn(midX, L.ffn + barH / 2, midX, L.output - barH / 2 - 2, 'rgba(255,255,255,0.08)', 1);
-
-    // ═══════════ OUTPUT ═══════════
-    drawBar(barX, L.output - barH / 2, barW, barH, 'rgba(78,205,196,0.07)', 'rgba(78,205,196,0.3)',
-      'X⁺ ∈ ℝᴮˣᵀˣᵈ  —  BLOCK OUTPUT', 'rgba(78,205,196,0.7)');
-
-    // ═══════════ SKIP / RESIDUAL (LEFT) ═══════════
-    ctx.setLineDash([2, 4]);
-    ctx.beginPath();
-    ctx.moveTo(skipX, L.norm + barH / 2);
-    ctx.lineTo(skipX - 14, L.norm + barH / 2);
-    ctx.lineTo(skipX - 14, L.gain);
-    ctx.lineTo(skipX, L.gain);
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1; ctx.stroke();
-    ctx.setLineDash([]);
-    lbl(skipX - 24, (L.norm + L.gain) / 2, 'SKIP', 'rgba(255,255,255,0.12)', 'center', 5.5);
-
     // ═══════════ PARTICLES ═══════════
-    memParticles.forEach(p => { p.update(); p.draw(L); });
-    flowParticles.forEach(p => { p.update(); p.draw(L); });
-    corrParticles.forEach(p => { p.update(); p.draw(L); });
-    fbParticles.forEach(p => { p.update(); p.draw(L); });
+    mainP.forEach(p=>{p.update();p.draw(L);});
+    hpP.forEach(p=>{p.update();p.draw(L);});
+    ctP.forEach(p=>{p.update();p.draw(L);});
 
     requestAnimationFrame(draw);
   }
 
   draw();
 
-  window.toggleSpeed = function() {
-    speedMult = speedMult === 1 ? 2 : speedMult === 2 ? 0.5 : 1;
-    document.getElementById('btnSpeed').textContent = speedMult + '× Speed';
-  };
-  window.toggleLabels = function() {
-    showLabels = !showLabels;
-    document.getElementById('btnLabels').classList.toggle('active', showLabels);
-  };
+  window.toggleSpeed=function(){speedMult=speedMult===1?2:speedMult===2?0.5:1;document.getElementById('btnSpeed').textContent=speedMult+'× Speed';};
+  window.toggleLabels=function(){showLabels=!showLabels;document.getElementById('btnLabels').classList.toggle('active',showLabels);};
 })();
 </script>
 
