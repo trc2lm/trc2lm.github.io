@@ -1,1931 +1,763 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TRC² — Thalamically Routed Cortical Columns</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<title>TRC² · Thalamically Routed Cortical Columns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════════════
-   CSS CUSTOM PROPERTIES — THEME SYSTEM
-   ═══════════════════════════════════════════════════ */
-:root {
-  --font-display: 'Instrument Serif', Georgia, serif;
-  --font-body: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'DM Mono', 'Courier New', monospace;
-  --font-accent: 'Playfair Display', Georgia, serif;
+/* ══════════ TOKENS ══════════ */
+:root{
+  /* LIGHT — default */
+  --bg:#f5f2ec;
+  --bg-2:#ebe7df;
+  --ink:#111014;
+  --ink-dim:#55525e;
+  --ink-faint:#9c99a6;
+  --line:rgba(0,0,0,.09);
+  --line-hi:rgba(0,0,0,.18);
+  --panel:rgba(255,255,255,.55);
+  --panel-2:rgba(255,255,255,.35);
+  --grid-line:rgba(0,0,0,.04);
+  --star-a:rgba(96,165,250,.10);
+  --star-b:rgba(192,132,252,.08);
+  --star-c:rgba(225,29,46,.05);
+  --topbar-bg:linear-gradient(180deg,rgba(245,242,236,.9),rgba(245,242,236,0));
+  --cursor-ring-col:rgba(0,0,0,.55);
+  --plot-bg:rgba(255,255,255,.5);
+  --table-head:#efeae2;
+  --axis-ink:rgba(0,0,0,.65);
+  --axis-faint:rgba(0,0,0,.35);
+  --grid-axis:rgba(0,0,0,.08);
 
-  /* Shared accent palette */
-  --thalamus: #ff6b35;
-  --cortex: #4ecdc4;
-  --cerebellum: #45b7d1;
-  --hippocampus: #a78bfa;
-  --neuromod: #f472b6;
-  --predictive: #fbbf24;
-  --dendrite: #34d399;
-  --glow-thalamus: rgba(255, 107, 53, 0.4);
-  --glow-cortex: rgba(78, 205, 196, 0.4);
-  --glow-cerebellum: rgba(69, 183, 209, 0.4);
+  --cortex:#2563eb;
+  --thalamus:#b45309;
+  --hippo:#7c3aed;
+  --gate:#be185d;
+  --replay:#047857;
+  --trc2:#e11d2e;
+  --warn:#ef4444;
 
-  --transition-speed: 0.5s;
-  --easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --serif:'Instrument Serif', 'Times New Roman', serif;
+  --sans:'Inter', system-ui, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, monospace;
+
+  --ease:cubic-bezier(.2,.8,.2,1);
 }
+[data-theme="dark"]{
+  --bg:#070711;
+  --bg-2:#0b0b18;
+  --ink:#f3f1ec;
+  --ink-dim:#a8a5b3;
+  --ink-faint:#5a576a;
+  --line:rgba(255,255,255,.08);
+  --line-hi:rgba(255,255,255,.16);
+  --panel:rgba(0,0,0,.3);
+  --panel-2:rgba(0,0,0,.4);
+  --grid-line:rgba(255,255,255,.018);
+  --star-a:rgba(96,165,250,.08);
+  --star-b:rgba(192,132,252,.06);
+  --star-c:rgba(255,59,59,.03);
+  --topbar-bg:linear-gradient(180deg,rgba(7,7,17,.85),rgba(7,7,17,0));
+  --cursor-ring-col:rgba(255,255,255,.6);
+  --plot-bg:rgba(0,0,0,.4);
+  --table-head:#0a0a14;
+  --axis-ink:rgba(255,255,255,.6);
+  --axis-faint:rgba(255,255,255,.32);
+  --grid-axis:rgba(255,255,255,.08);
 
-/* DARK THEME */
-[data-theme="dark"] {
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #12121a;
-  --bg-card: #1a1a28;
-  --bg-card-hover: #222236;
-  --bg-code: #161625;
-  --text-primary: #e8e6e3;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --border-color: rgba(255,255,255,0.06);
-  --border-accent: rgba(255,255,255,0.12);
-  --shadow-card: 0 4px 60px rgba(0,0,0,0.5);
-  --gradient-hero: linear-gradient(160deg, #0a0a0f 0%, #1a0a20 30%, #0a1a2f 60%, #0a0a0f 100%);
-  --gradient-section: linear-gradient(180deg, transparent, rgba(78,205,196,0.02), transparent);
-  --noise-opacity: 0.03;
-  --overlay-grid: rgba(255,255,255,0.015);
-  --equation-bg: rgba(255,255,255,0.03);
-  --table-header: rgba(78,205,196,0.08);
-  --table-row-alt: rgba(255,255,255,0.02);
-  --particle-color: rgba(255,255,255,0.3);
-}
-
-/* LIGHT THEME */
-[data-theme="light"] {
-  --bg-primary: #faf8f5;
-  --bg-secondary: #f0ede8;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8f6f3;
-  --bg-code: #f5f3ef;
-  --text-primary: #1a1a2e;
-  --text-secondary: #4a5568;
-  --text-muted: #718096;
-  --border-color: rgba(0,0,0,0.06);
-  --border-accent: rgba(0,0,0,0.12);
-  --shadow-card: 0 4px 40px rgba(0,0,0,0.08);
-  --gradient-hero: linear-gradient(160deg, #faf8f5 0%, #f0e6f6 30%, #e6f0f8 60%, #faf8f5 100%);
-  --gradient-section: linear-gradient(180deg, transparent, rgba(78,205,196,0.04), transparent);
-  --noise-opacity: 0.015;
-  --overlay-grid: rgba(0,0,0,0.02);
-  --equation-bg: rgba(0,0,0,0.03);
-  --table-header: rgba(78,205,196,0.1);
-  --table-row-alt: rgba(0,0,0,0.02);
-  --particle-color: rgba(0,0,0,0.15);
+  --cortex:#60a5fa;
+  --thalamus:#fbbf24;
+  --hippo:#c084fc;
+  --gate:#f472b6;
+  --replay:#34d399;
+  --trc2:#ff3b3b;
 }
 
-/* ═══════════════════════════════════════════════════
-   GLOBAL RESET & BASE
-   ═══════════════════════════════════════════════════ */
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.55;overflow-x:hidden;cursor:none}
+html{scroll-behavior:smooth}
+::selection{background:var(--trc2);color:#fff}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:none}
 
-html {
-  scroll-behavior: smooth;
-  font-size: 16px;
-  -webkit-font-smoothing: antialiased;
-}
+/* ══════════ CUSTOM CURSOR ══════════ */
+.cursor,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);mix-blend-mode:difference}
+.cursor{width:6px;height:6px;background:#fff;border-radius:50%}
+.cursor-ring{width:34px;height:34px;border:1px solid var(--cursor-ring-col);border-radius:50%;transition:width .2s var(--ease),height .2s var(--ease),border-color .2s var(--ease)}
+.cursor-ring.hot{width:56px;height:56px;border-color:var(--trc2)}
+.cursor-trail{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--trc2);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:.6}
 
-body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  line-height: 1.7;
-  transition: background var(--transition-speed) var(--easing),
-              color var(--transition-speed) var(--easing);
-  overflow-x: hidden;
-}
+/* ══════════ FIXED BG ══════════ */
+.stars{position:fixed;inset:0;background:
+  radial-gradient(ellipse at 20% 10%, var(--star-a), transparent 50%),
+  radial-gradient(ellipse at 80% 80%, var(--star-b), transparent 50%),
+  radial-gradient(ellipse at 50% 50%, var(--star-c), transparent 60%);
+  z-index:-2;transition:background .5s}
+.grid-bg{position:fixed;inset:0;z-index:-1;opacity:.5;background-image:
+  linear-gradient(var(--grid-line) 1px, transparent 1px),
+  linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse at center, #000 20%, transparent 80%);transition:background-image .4s}
 
-/* Noise texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: var(--noise-opacity);
-  pointer-events: none;
-  z-index: 9999;
-}
+/* ══════════ TOP BAR ══════════ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:500;padding:18px 32px;display:flex;align-items:center;gap:24px;backdrop-filter:blur(18px);background:var(--topbar-bg);border-bottom:1px solid transparent;transition:border-color .4s,background .4s}
+.theme-toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--line-hi);transform:rotate(25deg)}
+.theme-toggle svg{width:18px;height:18px}
+.theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:block}
+[data-theme="dark"] .theme-toggle .moon{display:none}
+.topbar.scrolled{border-color:var(--line)}
+.brand{font-family:var(--serif);font-size:1.4rem;letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+.brand-dot{width:9px;height:9px;border-radius:50%;background:var(--trc2);box-shadow:0 0 20px var(--trc2);animation:heartbeat 1.6s infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1);opacity:.9}20%{transform:scale(1.35);opacity:1}40%{transform:scale(.95);opacity:.8}}
+.nav{margin-left:auto;display:flex;gap:4px}
+.nav a{padding:8px 14px;border-radius:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);transition:all .25s}
+.nav a:hover{color:var(--ink);background:var(--line)}
+.nav .cta{background:var(--trc2);color:#fff;padding:8px 16px}
+.nav .cta:hover{background:#ff5555;color:#fff}
 
-::selection {
-  background: var(--cortex);
-  color: #0a0a0f;
-}
+/* ══════════ SECTION SHELL ══════════ */
+section{position:relative;padding:120px 32px}
+.wrap{max-width:1280px;margin:0 auto}
+.wrap-narrow{max-width:860px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--trc2);margin-bottom:18px}
+.eyebrow::before{content:'';width:28px;height:1px;background:var(--trc2)}
+.h1{font-family:var(--serif);font-size:clamp(3.5rem,9vw,8rem);line-height:.96;letter-spacing:-.03em;font-weight:400}
+.h2{font-family:var(--serif);font-size:clamp(2.2rem,5vw,4rem);line-height:1.02;letter-spacing:-.02em;font-weight:400}
+.h3{font-family:var(--serif);font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+.lede{font-size:1.15rem;color:var(--ink-dim);max-width:640px;line-height:1.75}
+.body{font-size:1rem;color:var(--ink-dim);line-height:1.8}
+.body p+p{margin-top:16px}
+.serif-italic{font-family:var(--serif);font-style:italic}
+.num{font-family:var(--serif);font-feature-settings:'tnum';font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
 
-a { color: var(--cortex); text-decoration: none; }
-a:hover { text-decoration: underline; }
+/* ══════════ HERO ══════════ */
+.hero{min-height:100vh;padding-top:120px;display:grid;grid-template-rows:1fr auto;overflow:hidden;position:relative}
+#brainCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.hero-content{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:0 32px;width:100%;align-self:center}
+.hero-tag{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--line-hi);border-radius:100px;font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);background:rgba(0,0,0,.4);backdrop-filter:blur(10px)}
+.hero-tag .pulse{width:6px;height:6px;border-radius:50%;background:var(--trc2);animation:heartbeat 1.6s infinite}
+.hero h1{margin-top:26px}
+.hero h1 .glow{background:linear-gradient(92deg,var(--trc2) 0%,#ff8a8a 40%,var(--thalamus) 75%,var(--hippo) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(255,59,59,.25))}
+.hero h1 .sup{font-size:.55em;vertical-align:top;line-height:1}
+.hero-sub{margin-top:28px;font-family:var(--serif);font-style:italic;font-size:clamp(1.25rem,2.3vw,1.8rem);color:var(--ink-dim);max-width:720px;line-height:1.35}
+.hero-meta{margin-top:44px;display:flex;flex-wrap:wrap;gap:28px;align-items:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;color:var(--ink-dim)}
+.hero-meta strong{color:var(--ink);font-weight:500}
+.hero-meta .sep{opacity:.3}
+.hero-foot{position:relative;z-index:2;padding:32px;display:flex;justify-content:space-between;align-items:center;max-width:1280px;margin:0 auto;width:100%}
+.hero-stats{display:flex;gap:40px}
+.hero-stat .val{font-family:var(--serif);font-size:2rem;color:var(--ink);line-height:1}
+.hero-stat .val.hot{color:var(--trc2)}
+.hero-stat .lbl{font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:10px;font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
+.scroll-hint::after{content:'';width:1px;height:46px;background:linear-gradient(var(--trc2),transparent);animation:scrollpulse 1.6s infinite}
+@keyframes scrollpulse{0%,100%{transform:scaleY(1);opacity:1}50%{transform:scaleY(.3);opacity:.3}}
 
-/* ═══════════════════════════════════════════════════
-   THEME TOGGLE
-   ═══════════════════════════════════════════════════ */
-.theme-toggle {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 1000;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1px solid var(--border-accent);
-  background: var(--bg-card);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.4s var(--easing);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-card);
-}
-.theme-toggle:hover {
-  transform: scale(1.1) rotate(15deg);
-  border-color: var(--cortex);
-}
-.theme-toggle svg {
-  width: 22px; height: 22px;
-  fill: var(--text-primary);
-  transition: fill var(--transition-speed);
-}
-.theme-toggle .sun { display: none; }
-[data-theme="light"] .theme-toggle .moon { display: none; }
-[data-theme="light"] .theme-toggle .sun { display: block; }
+/* ══════════ TICKER ══════════ */
+.ticker{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#05050c;padding:14px 0}
+.ticker-track{display:flex;gap:60px;animation:tick 60s linear infinite;white-space:nowrap;font-family:var(--mono);font-size:.78rem;color:var(--ink-dim);letter-spacing:.08em}
+.ticker-track span{display:inline-flex;align-items:center;gap:10px}
+.ticker-track .hot{color:var(--trc2);font-weight:600}
+.ticker-track .dot{width:4px;height:4px;border-radius:50%;background:var(--ink-faint)}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
-/* ═══════════════════════════════════════════════════
-   NAVIGATION
-   ═══════════════════════════════════════════════════ */
-.nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 900;
-  padding: 16px 32px;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  background: rgba(10,10,15,0.6);
-  backdrop-filter: blur(30px) saturate(1.5);
-  border-bottom: 1px solid var(--border-color);
-  transform: translateY(-100%);
-  transition: transform 0.5s var(--easing), background 0.5s;
-}
-[data-theme="light"] .nav {
-  background: rgba(250,248,245,0.7);
-}
-.nav.visible { transform: translateY(0); }
-.nav-logo {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  color: var(--cortex);
-  white-space: nowrap;
-}
-.nav-links {
-  display: flex; gap: 20px;
-  list-style: none;
-  margin-left: auto;
-  margin-right: 72px;
-}
-.nav-links a {
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  transition: color 0.3s;
-}
-.nav-links a:hover { color: var(--cortex); text-decoration: none; }
+/* ══════════ SECTION A: KEY NUMBERS MOSAIC ══════════ */
+.mosaic{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:56px}
+.tile{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.005));border-radius:18px;padding:28px;position:relative;overflow:hidden;transition:all .4s var(--ease)}
+.tile:hover{border-color:var(--line-hi);transform:translateY(-3px)}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--trc2));transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
+.tile:hover::before{transform:scaleX(1)}
+.tile .kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:14px;font-weight:600}
+.tile .big{font-family:var(--serif);font-size:clamp(2.8rem,5vw,4.5rem);line-height:.9;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+.tile .big .unit{font-size:.3em;color:var(--ink-dim);letter-spacing:.05em}
+.tile.hot .big{color:var(--trc2)}
+.tile .desc{margin-top:18px;color:var(--ink-dim);font-size:.9rem;line-height:1.55}
+.tile .tag{display:inline-block;margin-top:14px;padding:4px 10px;border-radius:6px;background:var(--line);font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
 
-/* ═══════════════════════════════════════════════════
-   LAYOUT
-   ═══════════════════════════════════════════════════ */
-.container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
-.wide-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
+.tile.col-6{grid-column:span 6}
+.tile.col-4{grid-column:span 4}
+.tile.col-3{grid-column:span 3}
+.tile.col-8{grid-column:span 8}
+.tile.col-12{grid-column:span 12}
+@media(max-width:900px){.tile[class*="col-"]{grid-column:span 12}}
 
-/* ═══════════════════════════════════════════════════
-   HERO SECTION
-   ═══════════════════════════════════════════════════ */
-.hero {
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  background: var(--gradient-hero);
-  overflow: hidden;
-  padding: 80px 32px;
-}
+/* vs comparison inside tile */
+.vs{display:flex;gap:18px;align-items:center;margin-top:20px}
+.vs .side{flex:1}
+.vs .side .n{font-family:var(--serif);font-size:2.2rem;line-height:1}
+.vs .side .l{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-faint);margin-top:4px}
+.vs .arrow{font-family:var(--mono);font-size:1.5rem;color:var(--trc2)}
+.vs .win{color:var(--trc2)}
 
-/* Animated neural network canvas */
-#neural-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0.7;
-  cursor: none;
-}
+/* ══════════ SECTION: LIVE STREAM SIMULATOR ══════════ */
+.stream-wrap{border:1px solid var(--line);border-radius:24px;padding:32px;background:var(--bg-2);margin-top:48px}
+.stream-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:16px}
+.stream-title{font-family:var(--serif);font-size:1.4rem;color:var(--ink)}
+.stream-controls{display:flex;gap:10px;flex-wrap:wrap}
+.chip{padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink-dim);font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;transition:all .2s}
+.chip:hover{border-color:var(--line-hi);color:var(--ink)}
+.chip.active{background:var(--trc2);color:#fff;border-color:var(--trc2)}
+.chip.lab-on{border-color:var(--replay);color:var(--replay)}
+.chip.lab-off{opacity:.5}
 
-.hero-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-radius: 100px;
-  border: 1px solid var(--border-accent);
-  background: var(--bg-card);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--cortex);
-  margin-bottom: 40px;
-  animation: fadeSlideUp 1s 0.2s var(--easing) both;
-}
-.hero-badge::before {
-  content: '';
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--cortex);
-  animation: pulse-dot 2s infinite;
-}
+#streamCanvas{width:100%;height:420px;display:block;border-radius:14px;background:var(--bg-2);border:1px solid var(--line)}
+.stream-timeline{margin-top:18px;position:relative;padding:8px 0}
+.stream-bar{height:14px;border-radius:8px;background:var(--bg-2);position:relative;overflow:hidden;cursor:none;border:1px solid var(--line-hi)}
+.stream-bar .seg{position:absolute;top:0;bottom:0}
+.stream-bar .seg.c4{left:0;width:45.45%;background:linear-gradient(90deg,rgba(37,99,235,.45),rgba(37,99,235,.22))}
+.stream-bar .seg.wiki{left:45.45%;width:45.45%;background:linear-gradient(90deg,rgba(190,24,93,.35),rgba(190,24,93,.18))}
+.stream-bar .seg.gsm{left:90.9%;width:9.1%;background:linear-gradient(90deg,rgba(4,120,87,.45),rgba(4,120,87,.25))}
+.stream-bar .playhead{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--trc2);box-shadow:0 0 12px var(--trc2)}
+.stream-bar .playhead::before{content:'';position:absolute;top:-6px;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--trc2);box-shadow:0 0 20px var(--trc2)}
+.stream-labels{display:flex;justify-content:space-between;margin-top:10px;font-family:var(--mono);font-size:.68rem;color:var(--ink-faint);letter-spacing:.08em}
+.stream-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-family:var(--mono);font-size:.72rem;color:var(--ink)}
+.stream-legend .it{display:flex;align-items:center;gap:8px}
+.stream-legend .sw{width:16px;height:3px;border-radius:2px}
+.stream-legend .sw.trc2{background:var(--trc2);box-shadow:0 0 8px var(--trc2)}
 
-.hero-badge a{
-  color: inherit;
-  text-decoration: none;
-}
+.stream-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+@media(max-width:800px){.stream-metrics{grid-template-columns:repeat(2,1fr)}}
+.sm-tile{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:left;transition:border-color .3s;background:var(--bg-2)}
+.sm-tile .ml{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--ink-dim);text-transform:uppercase;font-weight:600}
+.sm-tile .mv{font-family:var(--serif);font-size:1.8rem;margin-top:6px;line-height:1;transition:color .3s;color:var(--ink)}
+.sm-tile.active{border-color:var(--trc2)}
+.sm-tile.active .mv{color:var(--trc2)}
 
-.hero-badge a:hover{
-  text-decoration: none;
-  opacity: 0.85;
-}
+/* ══════════ SECTION: ARCHITECTURE SCROLL ══════════ */
+.arch-sticky{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;position:relative}
+@media(max-width:1000px){.arch-sticky{grid-template-columns:1fr}}
+.arch-viz-inner{position:sticky;top:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg-2);overflow:hidden;width:100%}
+#archCanvas{width:100%;height:auto;display:block}
+.arch-steps{display:flex;flex-direction:column;gap:80px}
+.arch-step{opacity:.5;transition:opacity .5s;padding:22px 0}
+.arch-step.active{opacity:1}
+.arch-step .num{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--trc2)}
+.arch-step h3{font-family:var(--serif);font-size:2rem;line-height:1.1;margin-top:10px}
+.arch-step p{color:var(--ink-dim);margin-top:14px;line-height:1.8;font-size:.98rem}
+.arch-step .mono-eq{margin-top:18px;padding:14px 16px;border:1px solid var(--line-hi);border-radius:8px;background:var(--bg-2);font-family:var(--mono);font-size:.82rem;color:var(--ink);overflow-x:auto;white-space:nowrap}
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
-}
+/* ══════════ SECTION: RADAR (native) ══════════ */
+.radar-block{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;margin-top:40px}
+@media(max-width:1000px){.radar-block{grid-template-columns:1fr}}
+#radarSvg{width:100%;max-width:560px;height:auto;aspect-ratio:1/1;display:block;margin:0 auto}
+.radar-models{display:flex;flex-direction:column;gap:8px}
+.rm-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;cursor:none;transition:all .2s}
+.rm-row:hover{border-color:var(--line-hi);background:rgba(255,255,255,.02)}
+.rm-row.hide{opacity:.28}
+.rm-sw{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.rm-name{font-family:var(--mono);font-size:.82rem;color:var(--ink)}
+.rm-row.trc2 .rm-name{color:var(--trc2);font-weight:600}
+.rm-scores{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--ink-faint)}
 
-.hero h1 {
-  font-family: var(--font-display);
-  font-size: clamp(3.2rem, 8vw, 7rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  max-width: 900px;
-  animation: fadeSlideUp 1s 0.4s var(--easing) both;
-}
+/* ══════════ SECTION: HEATMAP ══════════ */
+.heat-wrap{margin-top:40px;border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2);overflow:auto}
+.heat-title{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.heat-tabs{display:flex;gap:6px}
+.heat-grid{display:grid;gap:3px;font-family:var(--mono);font-size:.78rem}
+.hcell{padding:10px 8px;text-align:center;border-radius:4px;transition:all .2s;min-width:70px}
+.hcell.label{background:transparent;color:var(--ink-dim);text-align:right;padding-right:12px;min-width:120px}
+.hcell.head{background:transparent;color:var(--ink-dim);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.hcell.trc2-row{color:#fff;font-weight:700;box-shadow:inset 0 0 0 2px var(--trc2)}
+.hcell.trc2-row.label{color:var(--trc2);box-shadow:none}
 
-.hero h1 .accent {
-  background: linear-gradient(135deg, var(--thalamus), var(--cortex));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
+/* ══════════ SECTION: ORDER ROULETTE ══════════ */
+.order-wrap{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:stretch;margin-top:40px}
+@media(max-width:900px){.order-wrap{grid-template-columns:1fr}}
+.order-pick{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.order-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.obtn{padding:14px 18px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--mono);font-size:.88rem;letter-spacing:.08em;display:flex;align-items:center;gap:10px;transition:all .25s}
+.obtn:hover{border-color:var(--line-hi);transform:translateY(-2px)}
+.obtn.active{background:var(--trc2);color:#fff;border-color:var(--trc2);box-shadow:0 8px 30px rgba(255,59,59,.35)}
+.obtn .pill{padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.25);font-size:.7rem}
+.order-viz{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.order-bar{margin-top:16px;position:relative;height:38px;border-radius:8px;background:var(--bg-2);overflow:hidden;border:1px solid var(--line-hi)}
+.order-bar .fill{position:absolute;top:0;bottom:0;left:0;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:var(--mono);font-size:.75rem;color:#fff;font-weight:600;transition:width .9s var(--ease),background .4s}
+.order-bar .fill.trc2{background:linear-gradient(90deg,var(--trc2),#ff7a7a)}
+.order-bar .fill.base{background:linear-gradient(90deg,#4a4a55,#6b6b7a)}
+.order-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);margin-top:6px;font-weight:600}
+.order-advantage{margin-top:22px;padding:18px;border:1px solid var(--trc2);border-radius:12px;background:color-mix(in oklch,var(--trc2) 8%,var(--bg-2));text-align:center}
+.order-advantage .big{font-family:var(--serif);font-size:3rem;color:var(--trc2);line-height:1}
+.order-advantage .lbl{font-family:var(--mono);font-size:.75rem;color:var(--ink-dim);margin-top:8px;letter-spacing:.08em;font-weight:600}
 
-.hero-subtitle {
-  font-family: var(--font-accent);
-  font-style: italic;
-  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-  color: var(--text-secondary);
-  max-width: 700px;
-  margin-top: 28px;
-  animation: fadeSlideUp 1s 0.6s var(--easing) both;
-}
+/* ══════════ SECTION: ABLATION LAB ══════════ */
+.lab-wrap{margin-top:40px;display:grid;grid-template-columns:1fr 1.3fr;gap:28px;align-items:stretch}
+@media(max-width:1000px){.lab-wrap{grid-template-columns:1fr}}
+.lab-knobs{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.knob{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;gap:16px;cursor:none;transition:all .25s;background:var(--bg)}
+.knob:hover{border-color:var(--line-hi)}
+.knob.on{border-color:currentColor}
+.knob.thal{color:var(--thalamus)}
+.knob.hippo{color:var(--hippo)}
+.knob-sw{width:52px;height:28px;border-radius:14px;background:#1a1a24;position:relative;flex-shrink:0;transition:background .3s;border:1px solid var(--line)}
+.knob-sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#5a576a;transition:all .3s}
+.knob.on .knob-sw{background:currentColor}
+.knob.on .knob-sw::after{left:27px;background:#0a0a14}
+.knob-lbl{flex:1}
+.knob-lbl .n{font-family:var(--serif);font-size:1.2rem;color:var(--ink)}
+.knob-lbl .d{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);letter-spacing:.06em;margin-top:2px}
+.lab-result{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.lab-vals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.lab-val{border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;transition:all .4s;background:var(--bg-2)}
+.lab-val.best{border-color:var(--trc2);background:color-mix(in oklch,var(--trc2) 6%,var(--bg-2))}
+.lab-val .l{font-family:var(--mono);font-size:.62rem;color:var(--ink-dim);letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.lab-val .v{font-family:var(--serif);font-size:2rem;margin-top:4px;transition:color .4s;color:var(--ink)}
+.lab-val.best .v{color:var(--trc2)}
+#labCanvas{width:100%;height:220px;margin-top:18px;border-radius:10px;background:var(--bg-2);border:1px solid var(--line)}
+.lab-verdict{margin-top:16px;padding:16px;border-radius:10px;font-family:var(--mono);font-size:.82rem;line-height:1.6;color:var(--ink);background:color-mix(in oklch,var(--trc2) 6%,var(--bg-2));border-left:3px solid var(--trc2)}
 
-.hero-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  justify-content: center;
-  margin-top: 48px;
-  animation: fadeSlideUp 1s 0.8s var(--easing) both;
-}
+/* ══════════ DIVIDER ══════════ */
+.hr{margin:80px 0;display:flex;align-items:center;gap:18px}
+.hr::before,.hr::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.hr-glyph{font-family:var(--serif);font-style:italic;color:var(--ink-faint);font-size:1.2rem}
 
-.hero-meta-item {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-}
-.hero-meta-item strong {
-  color: var(--text-primary);
-  font-weight: 500;
-}
+/* ══════════ FOOTER ══════════ */
+footer{padding:80px 32px 40px;border-top:1px solid var(--line);margin-top:80px;background:#05050c}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;max-width:1280px;margin:0 auto}
+@media(max-width:800px){.foot-grid{grid-template-columns:1fr}}
+.foot-brand h4{font-family:var(--serif);font-size:2rem;line-height:1}
+.foot-brand p{color:var(--ink-dim);margin-top:12px;max-width:380px}
+.foot-col h5{font-family:var(--mono);font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px}
+.foot-col a{display:block;padding:4px 0;color:var(--ink-dim);transition:color .2s}
+.foot-col a:hover{color:var(--trc2)}
+.foot-bottom{max-width:1280px;margin:60px auto 0;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);flex-wrap:wrap;gap:12px}
 
-.hero-scroll-hint {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  animation: fadeSlideUp 1s 1.2s var(--easing) both;
-}
-.hero-scroll-hint span {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.scroll-line {
-  width: 1px; height: 40px;
-  background: linear-gradient(to bottom, var(--cortex), transparent);
-  animation: scroll-pulse 2s infinite;
-}
-@keyframes scroll-pulse {
-  0% { opacity: 1; transform: scaleY(1); }
-  50% { opacity: 0.3; transform: scaleY(0.5); }
-  100% { opacity: 1; transform: scaleY(1); }
-}
+/* ══════════ REVEAL ══════════ */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.reveal.in{opacity:1;transform:translateY(0)}
 
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(40px); }
-  to { opacity: 1; transform: translateY(0); }
+/* ══════════ MOBILE ══════════ */
+@media(max-width:768px){
+  html,body{cursor:auto}
+  .cursor,.cursor-ring,.cursor-trail{display:none}
+  section{padding:80px 20px}
+  .topbar{padding:14px 20px}
+  .nav{display:none}
+  .hero-foot{flex-direction:column;gap:30px;align-items:flex-start}
+  .arch-viz{position:static;height:360px}
+  .mosaic{grid-template-columns:repeat(6,1fr)}
 }
-
-/* ═══════════════════════════════════════════════════
-   SECTION STYLING
-   ═══════════════════════════════════════════════════ */
-section {
-  padding: 100px 0;
-  position: relative;
-}
-
-.section-label {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--cortex);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.section-label::before {
-  content: '';
-  width: 32px; height: 1px;
-  background: var(--cortex);
-}
-
-.section-title {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: 32px;
-}
-
-.section-body {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-  line-height: 1.8;
-  max-width: 720px;
-}
-.section-body p + p {
-  margin-top: 20px;
-}
-
-/* ═══════════════════════════════════════════════════
-   ANIMATED BRAIN COMPONENT CARDS
-   ═══════════════════════════════════════════════════ */
-.components-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-top: 56px;
-}
-
-.comp-card {
-  position: relative;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 36px;
-  overflow: hidden;
-  transition: all 0.5s var(--easing);
-  cursor: default;
-}
-.comp-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--card-accent, var(--cortex));
-  opacity: 0;
-  transition: opacity 0.4s;
-}
-.comp-card:hover::before { opacity: 1; }
-.comp-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-accent);
-  box-shadow: var(--shadow-card);
-}
-
-.comp-icon {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 20px;
-  position: relative;
-}
-.comp-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.comp-card h3 {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  margin-bottom: 12px;
-}
-.comp-card p {
-  color: var(--text-secondary);
-  font-size: 0.92rem;
-  line-height: 1.65;
-}
-.comp-card .comp-tag {
-  display: inline-block;
-  margin-top: 16px;
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 4px 12px;
-  border-radius: 100px;
-  border: 1px solid var(--border-accent);
-  color: var(--text-muted);
-}
-
-/* ═══════════════════════════════════════════════════
-   ARCHITECTURE DIAGRAM SECTION
-   ═══════════════════════════════════════════════════ */
-.arch-section {
-  background: var(--gradient-section);
-}
-
-.arch-diagram-wrap {
-  position: relative;
-  margin: 48px auto;
-  max-width: 900px;
-}
-
-.arch-flow {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-}
-
-.arch-node {
-  position: relative;
-  width: 100%;
-  max-width: 640px;
-  padding: 20px 28px;
-  border-radius: 14px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  font-size: 0.9rem;
-  transition: all 0.4s var(--easing);
-  overflow: hidden;
-}
-.arch-node:hover {
-  border-color: var(--node-color, var(--border-accent));
-  box-shadow: 0 0 40px rgba(78,205,196,0.08);
-  transform: scale(1.01);
-}
-.arch-node-label {
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.arch-node-label .dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.arch-node-title {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  margin-bottom: 4px;
-}
-.arch-node-desc {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-.arch-arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 36px;
-  position: relative;
-}
-.arch-arrow::before {
-  content: '';
-  width: 1px; height: 28px;
-  background: linear-gradient(to bottom, var(--border-accent), var(--cortex));
-  animation: flow-down 2s infinite linear;
-}
-.arch-arrow::after {
-  content: '';
-  width: 8px; height: 8px;
-  border-right: 1px solid var(--cortex);
-  border-bottom: 1px solid var(--cortex);
-  transform: rotate(45deg);
-  margin-top: -4px;
-}
-@keyframes flow-down {
-  0% { opacity: 0.3; }
-  50% { opacity: 1; }
-  100% { opacity: 0.3; }
-}
-
-/* ═══════════════════════════════════════════════════
-   EQUATIONS
-   ═══════════════════════════════════════════════════ */
-.equation-block {
-  background: var(--equation-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 24px 32px;
-  margin: 24px 0;
-  font-family: var(--font-mono);
-  font-size: 0.88rem;
-  overflow-x: auto;
-  position: relative;
-}
-.equation-block::before {
-  content: attr(data-eq);
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-/* ═══════════════════════════════════════════════════
-   TABLES
-   ═══════════════════════════════════════════════════ */
-.results-table-wrap {
-  overflow-x: auto;
-  margin: 32px 0;
-  border-radius: 16px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-}
-.results-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.88rem;
-}
-.results-table th {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: left;
-  padding: 16px 20px;
-  background: var(--table-header);
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
-}
-.results-table td {
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
-}
-.results-table tr:nth-child(even) td {
-  background: var(--table-row-alt);
-}
-.results-table .highlight-row td {
-  color: var(--cortex);
-  font-weight: 600;
-}
-.results-table .best-val {
-  color: var(--cortex);
-  font-weight: 600;
-}
-
-/* ═══════════════════════════════════════════════════
-   ANIMATED BRAIN SVG ICONS
-   ═══════════════════════════════════════════════════ */
-@keyframes neuron-pulse {
-  0%, 100% { r: 3; opacity: 0.8; }
-  50% { r: 5; opacity: 1; }
-}
-@keyframes synapse-fire {
-  0% { stroke-dashoffset: 30; opacity: 0.3; }
-  50% { stroke-dashoffset: 0; opacity: 1; }
-  100% { stroke-dashoffset: -30; opacity: 0.3; }
-}
-@keyframes rotate-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-@keyframes orbit {
-  from { transform: rotate(0deg) translateX(22px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(22px) rotate(-360deg); }
-}
-
-.icon-animated circle.pulse {
-  animation: neuron-pulse 2s ease-in-out infinite;
-}
-.icon-animated line.synapse {
-  stroke-dasharray: 15;
-  animation: synapse-fire 1.5s ease-in-out infinite;
-}
-
-/* ═══════════════════════════════════════════════════
-   BAR CHART VIS
-   ═══════════════════════════════════════════════════ */
-.chart-container {
-  margin: 40px 0;
-  padding: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-}
-.chart-title {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 24px;
-}
-.chart-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.chart-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.chart-bar-label {
-  width: 120px;
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  text-align: right;
-  color: var(--text-secondary);
-  flex-shrink: 0;
-}
-.chart-bar-track {
-  flex: 1;
-  height: 28px;
-  background: var(--equation-bg);
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
-}
-.chart-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 1.5s var(--easing);
-  position: relative;
-}
-.chart-bar-fill::after {
-  content: attr(data-val);
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #0a0a0f;
-}
-.chart-bar-fill.trc2 { background: linear-gradient(90deg, var(--cortex), var(--thalamus)); }
-.chart-bar-fill.transformer { background: linear-gradient(90deg, #6b7280, #9ca3af); }
-.chart-bar-fill.mamba { background: linear-gradient(90deg, #4b5563, #6b7280); }
-
-/* ═══════════════════════════════════════════════════
-   CONTRIBUTION CARDS
-   ═══════════════════════════════════════════════════ */
-.contrib-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-top: 48px;
-}
-@media (max-width: 768px) {
-  .contrib-grid { grid-template-columns: 1fr; }
-}
-.contrib-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 32px;
-  position: relative;
-  transition: all 0.4s var(--easing);
-}
-.contrib-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-card);
-}
-.contrib-num {
-  font-family: var(--font-display);
-  font-size: 3.5rem;
-  line-height: 1;
-  background: linear-gradient(135deg, var(--cortex), transparent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 16px;
-  opacity: 0.6;
-}
-.contrib-card h3 {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  margin-bottom: 12px;
-}
-.contrib-card p {
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-/* ═══════════════════════════════════════════════════
-   FOOTER
-   ═══════════════════════════════════════════════════ */
-.footer {
-  padding: 60px 0;
-  text-align: center;
-  border-top: 1px solid var(--border-color);
-}
-.footer p {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-/* ═══════════════════════════════════════════════════
-   SCROLL ANIMATIONS
-   ═══════════════════════════════════════════════════ */
-.reveal {
-  opacity: 0;
-  transform: translateY(30px);
-  transition: opacity 0.8s var(--easing), transform 0.8s var(--easing);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Stagger children */
-.stagger-children > * {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s var(--easing), transform 0.6s var(--easing);
-}
-.stagger-children.visible > *:nth-child(1) { transition-delay: 0.0s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(2) { transition-delay: 0.1s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(3) { transition-delay: 0.2s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(4) { transition-delay: 0.3s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(5) { transition-delay: 0.4s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(6) { transition-delay: 0.5s; opacity: 1; transform: translateY(0); }
-.stagger-children.visible > *:nth-child(7) { transition-delay: 0.6s; opacity: 1; transform: translateY(0); }
-
-/* Dividers */
-.section-divider {
-  width: 100%;
-  max-width: 200px;
-  height: 1px;
-  margin: 0 auto;
-  background: linear-gradient(90deg, transparent, var(--cortex), transparent);
-  opacity: 0.3;
-}
-
-/* ═══════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════ */
-@media (max-width: 640px) {
-  .container, .wide-container { padding: 0 20px; }
-  section { padding: 60px 0; }
-  .nav-links { display: none; }
-  .components-grid { grid-template-columns: 1fr; }
-}
-
-/* Animated brain background for sections */
-.brain-bg {
-  position: absolute;
-  right: -120px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 500px;
-  height: 500px;
-  opacity: 0.03;
-  pointer-events: none;
-}
-
-/* Citation tooltip */
-.cite {
-  cursor: help;
-  border-bottom: 1px dotted var(--text-muted);
-}
-
-/* Special highlight block */
-.highlight-block {
-  background: linear-gradient(135deg, rgba(78,205,196,0.06), rgba(255,107,53,0.04));
-  border-left: 3px solid var(--cortex);
-  border-radius: 0 12px 12px 0;
-  padding: 24px 28px;
-  margin: 28px 0;
-  font-size: 1rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-}
-.highlight-block strong {
-  color: var(--text-primary);
-}
-
-/* Inline code */
-code {
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-  background: var(--equation-bg);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-}
-
-/* Floating particles */
-.particles-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-.particle {
-  position: absolute;
-  width: 2px; height: 2px;
-  background: var(--particle-color);
-  border-radius: 50%;
-  animation: float-particle linear infinite;
-}
-@keyframes float-particle {
-  0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(-10vh) translateX(40px); opacity: 0; }
-}
-
-/* Horizontal rule with brain motif */
-.brain-hr {
-  margin: 80px auto;
-  text-align: center;
-  position: relative;
-}
-.brain-hr::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 0; right: 0;
-  height: 1px;
-  background: var(--border-color);
-}
-.brain-hr svg {
-  position: relative;
-  z-index: 1;
-  background: var(--bg-primary);
-  padding: 0 20px;
-  transition: background var(--transition-speed);
-}
-
-/* ═══════════════════════════════════════════════════
-   ANIMATED TOKEN FLOW CANVAS
-   ═══════════════════════════════════════════════════ */
-.token-flow-section {
-  padding: 100px 0;
-}
-.canvas-outer {
-  position: relative;
-  width: 100%;
-  margin-top: 40px;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 1px solid var(--border-accent);
-  box-shadow: var(--shadow-card);
-}
-[data-theme="dark"] .canvas-outer {
-  background: linear-gradient(145deg, #0d1a2a 0%, #0a1020 40%, #120a1e 70%, #0a0a14 100%);
-}
-[data-theme="light"] .canvas-outer {
-  background: linear-gradient(145deg, #1a3a5c 0%, #15304e 40%, #2a1848 70%, #1a2040 100%);
-}
-#tokenFlowCanvas {
-  width: 100%;
-  height: 1220px;
-  display: block;
-}
-.canvas-legend {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.canvas-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.68rem;
-  color: rgba(255,255,255,0.6);
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-}
-.canvas-legend-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.canvas-controls {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  gap: 8px;
-}
-.canvas-controls button {
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.7);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.canvas-controls button:hover {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-}
-.canvas-controls button.active {
-  background: rgba(78,205,196,0.2);
-  border-color: rgba(78,205,196,0.4);
-  color: #4ecdc4;
-}
-/* ═══════════════════════════════════════════════════
-   PHONE ROTATION NOTIFICATION
-   ═══════════════════════════════════════════════════ */
-.rotate-notice {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 14px 24px;
-  margin: 20px auto 0;
-  max-width: 420px;
-  border-radius: 14px;
-  border: 1px solid rgba(78,205,196,0.25);
-  background: linear-gradient(135deg, rgba(78,205,196,0.08), rgba(167,139,250,0.06));
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  letter-spacing: 0.03em;
-  text-align: center;
-  animation: gentle-pulse 3s ease-in-out infinite;
-}
-.rotate-notice .rotate-icon {
-  font-size: 1.4rem;
-  animation: tilt-phone 2.5s ease-in-out infinite;
-  display: inline-block;
-}
-@keyframes tilt-phone {
-  0%, 100% { transform: rotate(0deg); }
-  30% { transform: rotate(90deg); }
-  60% { transform: rotate(90deg); }
-  90% { transform: rotate(0deg); }
-}
-@keyframes gentle-pulse {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; }
-}
-@media (max-width: 768px) {
-  .rotate-notice { display: flex; }
-}
-@media (max-width: 768px) and (orientation: landscape) {
-  .rotate-notice { display: none; }
-}
-
 </style>
+<script>
+  (function(){
+    const saved=localStorage.getItem('trc2-theme')||'light';
+    document.documentElement.setAttribute('data-theme',saved);
+  })();
+</script>
 </head>
 <body>
 
-<!-- Floating particles -->
-<div class="particles-container" id="particles"></div>
+<div class="stars"></div>
+<div class="grid-bg"></div>
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="curR"></div>
 
-<!-- Theme toggle -->
-<button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
-  <svg class="moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-  <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-</button>
+<!-- ═══════════ TOP BAR ═══════════ -->
+<header class="topbar" id="topbar">
+  <div class="brand"><span class="brand-dot"></span> TRC²</div>
+  <nav class="nav">
+    <a href="#stream">Stream</a>
+    <a href="#arch">Architecture</a>
+    <a href="#radar">Radar</a>
+    <a href="#lab">Lab</a>
+    <a href="#order">Robustness</a>
+    <a href="#results">Results</a>
+    <a class="cta" href="https://arxiv.org/abs/2602.22479" target="_blank" rel="noopener">Read the paper ↗</a>
+  </nav>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+</header>
 
-<!-- Navigation -->
-<nav class="nav" id="nav">
-  <span class="nav-logo">TRC²</span>
-  <ul class="nav-links">
-    <li><a href="#abstract">Abstract</a></li>
-    <li><a href="#components">Architecture</a></li>
-    <li><a href="#method">Method</a></li>
-    <li><a href="#results">Results</a></li>
-    <li><a href="#discussion">Discussion</a></li>
-  </ul>
-</nav>
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero" id="hero">
+  <canvas id="brainCanvas"></canvas>
 
-<!-- ═══════════════════════════ HERO ═══════════════════════════ -->
-<header class="hero">
-  <canvas id="neural-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-tag"><span class="pulse"></span> <a href="https://arxiv.org/abs/2602.22479" target="_blank" rel="noopener" style="color:inherit">arXiv:2602.22479 ↗</a> · cs.LG</div>
+    <h1 class="h1">
+      The brain<br>
+      doesn't forget.<br>
+      <span class="glow">Neither does TRC<span class="sup">2</span>.</span>
+    </h1>
+    <p class="hero-sub">A decoder-only architecture where thalamic routing and a causal hippocampus make continual learning a property of the backbone — not a procedure bolted on top.</p>
 
-  <div class="hero-badge">
-    <a href="https://arxiv.org/abs/2602.22479" target="_blank" rel="noopener noreferrer">
-      arXiv:2602.22479v1 · cs.LG · Feb 2026
-    </a>
+    <div class="hero-meta">
+      <span><strong>Afshin Khadangi</strong></span>
+      <span class="sep">·</span>
+    </div>
   </div>
 
-  <h1>
-    <span class="accent">TRC²</span><br>
-    Thalamically Routed<br>Cortical Columns
-  </h1>
-
-  <p class="hero-subtitle">
-    Efficient Continual Learning in Language Models via<br>
-    Biologically Grounded Sparse Routing & Fast Correction
-  </p>
-
-  <div class="hero-meta">
-    <div class="hero-meta-item"><strong>Afshin Khadangi</strong> · SnT, University of Luxembourg</div>
-    <div class="hero-meta-item">~2.88B tokens trained</div>
-  </div>
-
-  <div class="hero-scroll-hint">
-    <span>Scroll to explore</span>
-    <div class="scroll-line"></div>
+  <div class="hero-foot">
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val num hot">0.08</div><div class="lbl">TokAcc AUFC</div></div>
+      <div class="hero-stat"><div class="val num hot">0.44</div><div class="lbl">PPL AUFC</div></div>
+      <div class="hero-stat"><div class="val num">2.48×</div><div class="lbl">best-shuffle advantage</div></div>
+      <div class="hero-stat"><div class="val num">2.88B</div><div class="lbl">tokens · 4× V100</div></div>
+    </div>
+    <div class="scroll-hint">scroll</div>
   </div>
 </header>
 
+<!-- ═══════════ TICKER ═══════════ -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="hot">◆ TRC² dominates 5/5 task shuffles</span><span class="dot"></span>
+    <span>PPL AUFC <strong>0.44</strong> vs best baseline <strong>1.11</strong></span><span class="dot"></span>
+    <span class="hot">◆ 60% forgetting reduction on W→G→C</span><span class="dot"></span>
+    <span>GSM8K accuracy <strong>59.0%</strong></span><span class="dot"></span>
+    <span class="hot">◆ Thalamic router + hippocampus = part of the forward pass</span><span class="dot"></span>
+    <span>7 baselines · 3 corpora · 22k steps</span><span class="dot"></span>
+    <span class="hot">◆ TRC² dominates 5/5 task shuffles</span><span class="dot"></span>
+    <span>PPL AUFC <strong>0.44</strong> vs best baseline <strong>1.11</strong></span><span class="dot"></span>
+    <span class="hot">◆ 60% forgetting reduction on W→G→C</span><span class="dot"></span>
+    <span>GSM8K accuracy <strong>59.0%</strong></span><span class="dot"></span>
+    <span class="hot">◆ Thalamic router + hippocampus = part of the forward pass</span><span class="dot"></span>
+    <span>7 baselines · 3 corpora · 22k steps</span><span class="dot"></span>
+  </div>
+</div>
 
-<!-- ═══════════════════════════ ABSTRACT ═══════════════════════════ -->
-<section id="abstract">
-  <div class="container">
+<!-- ═══════════ SECTION: NUMBERS MOSAIC ═══════════ -->
+<section id="top-numbers">
+  <div class="wrap">
     <div class="reveal">
-      <div class="section-label">Abstract</div>
-      <div class="section-body">
-        <p>Large language models deployed in the wild must adapt to evolving data, user behavior, and task mixtures without erasing previously acquired capabilities. We present <strong>TRC²</strong> (Thalamically Routed Cortical Columns), a decoder-only architecture that makes continual adaptation a property of the backbone itself.</p>
-        <p>TRC² combines stacked cortical columns—each performing grouped-query attention and routed mixture-of-experts computation—with a <em>thalamic modulatory pathway</em> for selective inter-column communication and a <em>hippocampal pathway</em> for event-selective retrieval, delayed surprise-based writing, and replay-driven consolidation.</p>
-        <p>We further introduce a causal memory-update scheme and an online replay controller that adjusts consolidation strength from measured forgetting. Across a task-sequential stream over C4, WikiText-103, and GSM8K, TRC² consistently improves task-boundary modeling quality and substantially reduces cumulative forgetting relative to Transformer, Mamba, MoE, and DeepSeek baselines.</p>
+      <div class="eyebrow">The headline</div>
+      <h2 class="h2">Same stream. Every baseline blows up.<br><span class="serif-italic" style="color:var(--trc2)">TRC² stays flat.</span></h2>
+      <p class="lede" style="margin-top:22px">A Transformer's perplexity on C4 collapses the moment it touches WikiText-103. TRC² keeps the whole forgetting curve near the floor — and the advantage compounds as the stream gets longer and more adversarial.</p>
+    </div>
+
+    <div class="mosaic">
+      <div class="tile col-6 hot reveal" style="--accent:var(--trc2)">
+        <div class="kicker">PPL AUFC @ 22k · lower is better</div>
+        <div class="vs">
+          <div class="side"><div class="n num">1.11</div><div class="l">best baseline<br>(MoE 1024)</div></div>
+          <div class="arrow win">→</div>
+          <div class="side"><div class="n num" style="color:var(--trc2)">0.44</div><div class="l">TRC² · ours<br>(226M, d768-l4)</div></div>
+        </div>
+        <div class="desc">A 60% cut in cumulative perplexity forgetting, at <em>half</em> the parameters of the best baseline.</div>
+      </div>
+
+      <div class="tile col-3 reveal" style="--accent:var(--hippo)">
+        <div class="kicker">BLEU AUFC</div>
+        <div class="big num" style="color:var(--hippo)">0.12</div>
+        <div class="desc">vs 0.74 for the best baseline. Token-level structure survives task switches.</div>
+      </div>
+
+      <div class="tile col-3 reveal" style="--accent:var(--thalamus)">
+        <div class="kicker">TokAcc AUFC</div>
+        <div class="big num" style="color:var(--thalamus)">0.08</div>
+        <div class="desc">vs 0.13 for the best baseline. Fine-grained accuracy is retained end-to-end.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--cortex)">
+        <div class="kicker">GSM8K accuracy</div>
+        <div class="big num" style="color:var(--cortex)">59.0<span class="unit">%</span></div>
+        <div class="desc">408M TRC² (d768-l8) beats every baseline at any scale up to 545M.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--replay)">
+        <div class="kicker">Best-shuffle advantage</div>
+        <div class="big num" style="color:var(--replay)">2.48<span class="unit">×</span></div>
+        <div class="desc">On the adversarial W→G→C stream, TRC²'s AUFC is 2.48× better than the best baseline.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--gate)">
+        <div class="kicker">Shuffle range (min–max)</div>
+        <div class="big num" style="color:var(--gate)">0.29</div>
+        <div class="desc">TRC²'s AUFC barely moves across 5 random task orders. Every baseline doubles.</div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="section-divider"></div>
-
-<!-- ═══════════════════════════ CONTRIBUTIONS ═══════════════════════════ -->
-<section>
-  <div class="container">
+<!-- ═══════════ SECTION: LIVE STREAM SIMULATOR ═══════════ -->
+<section id="stream">
+  <div class="wrap">
     <div class="reveal">
-      <div class="section-label">Contributions</div>
-      <div class="section-title">Three Key Contributions</div>
+      <div class="eyebrow">Live simulation</div>
+      <h2 class="h2">Watch it happen.<br><span class="serif-italic">Scrub the 22k-step training stream.</span></h2>
+      <p class="lede" style="margin-top:22px">Drag the playhead across 22,000 optimizer steps. Toggle any of the eight models on or off. Pick any of the five task orderings. The red line is TRC² — it barely leaves the floor. Every other model climbs the moment the stream shifts tasks.</p>
     </div>
-    <div class="components-grid" style="grid-template-columns: repeat(3, 1fr);">
-      <div class="comp-card reveal" style="--card-accent: var(--thalamus);">
-        <div class="comp-icon"><svg viewBox="0 0 72 72"><circle cx="36" cy="36" r="28" fill="none" stroke="#ff6b35" stroke-width="2" opacity="0.4"/><circle cx="36" cy="36" r="16" fill="none" stroke="#ff6b35" stroke-width="1.5" opacity="0.6"/><circle cx="36" cy="36" r="5" fill="#ff6b35" opacity="0.5"/></svg></div>
-        <h3>Architecture</h3>
-        <p>TRC² integrates thalamic modulation and hippocampal episodic memory into the decoder backbone, making selective communication and online consolidation part of the forward computation.</p>
-        <span class="comp-tag">Cortex · Thalamus · Hippocampus</span>
+
+    <div class="stream-wrap reveal">
+      <div class="stream-head">
+        <div class="stream-title">Cumulative forgetting · <span class="mono" style="color:var(--ink-faint);font-size:.9rem">AUFC(t)</span></div>
+        <div class="stream-controls" id="streamOrderBtns">
+          <button class="chip active" data-order="CGW">C→G→W</button>
+          <button class="chip" data-order="GCW">G→C→W</button>
+          <button class="chip" data-order="GWC">G→W→C</button>
+          <button class="chip" data-order="WCG">W→C→G</button>
+          <button class="chip" data-order="WGC">W→G→C</button>
+        </div>
       </div>
-      <div class="comp-card reveal" style="--card-accent: var(--hippocampus);">
-        <div class="comp-icon"><svg viewBox="0 0 72 72"><path d="M 16 50 C 16 30, 30 20, 50 20 C 60 20, 65 30, 60 40 C 55 50, 40 55, 25 55 C 20 55, 16 53, 16 50 Z" fill="none" stroke="#a78bfa" stroke-width="2" opacity="0.5"/><circle cx="36" cy="36" r="4" fill="#a78bfa" opacity="0.4"/></svg></div>
-        <h3>Causal Memory</h3>
-        <p>Hippocampal writes are retrospective and surprise-based. Replay is sampled only from past stored chunks. An adaptive controller adjusts consolidation strength online.</p>
-        <span class="comp-tag">TD-surprise · Deferred Write · Replay</span>
+
+      <canvas id="streamCanvas"></canvas>
+
+      <div class="stream-timeline">
+        <div class="stream-bar" id="streamBar">
+          <div class="seg c4"></div>
+          <div class="seg wiki"></div>
+          <div class="seg gsm"></div>
+          <div class="playhead" id="playhead" style="left:50%"></div>
+        </div>
+        <div class="stream-labels">
+          <span>0</span><span>5k</span><span>10k</span><span>15k</span><span>20k</span><span>22k</span>
+        </div>
       </div>
-      <div class="comp-card reveal" style="--card-accent: var(--cortex);">
-        <div class="comp-icon"><svg viewBox="0 0 72 72"><rect x="12" y="14" width="14" height="44" rx="4" fill="none" stroke="#4ecdc4" stroke-width="1.5" opacity="0.4"/><rect x="30" y="10" width="14" height="52" rx="4" fill="none" stroke="#4ecdc4" stroke-width="1.5" opacity="0.5"/><rect x="48" y="14" width="14" height="44" rx="4" fill="none" stroke="#4ecdc4" stroke-width="1.5" opacity="0.4"/></svg></div>
-        <h3>Empirical Study</h3>
-        <p>Controlled comparisons against Transformer, Mamba, MoE, and DeepSeek baselines under a shared task stream, plus ablations isolating each component's contribution.</p>
-        <span class="comp-tag">C4 · WikiText-103 · GSM8K</span>
+
+      <div class="stream-legend" id="streamLegend"></div>
+
+      <div class="stream-metrics" id="streamMetrics">
+        <div class="sm-tile active"><div class="ml">Step</div><div class="mv num" id="mStep">11,000</div></div>
+        <div class="sm-tile active"><div class="ml">Current task</div><div class="mv" id="mTask" style="font-family:var(--serif)">WikiText-103</div></div>
+        <div class="sm-tile active"><div class="ml">TRC² AUFC</div><div class="mv num" id="mTrc">0.14</div></div>
+        <div class="sm-tile"><div class="ml">Best baseline AUFC</div><div class="mv num" id="mBase">0.68</div></div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="section-divider"></div>
-
-<!-- ═══════════════════════════ ARCHITECTURE COMPONENTS ═══════════════════════════ -->
-<section id="components">
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">Architecture</div>
-      <div class="section-title">Three Interacting Subsystems</div>
-      <div class="section-body">
-        <p>TRC² is organized into three interacting subsystems. The cortical columns perform causal sequence modeling. The thalamic router transforms deep-layer activity into a causal modulatory signal. The hippocampal memory provides event-selective retrieval, surprise-based writing, and replay-driven consolidation.</p>
-      </div>
+<!-- ═══════════ SECTION: ARCHITECTURE SCROLL ═══════════ -->
+<section id="arch">
+  <div class="wrap">
+    <div class="reveal" style="margin-bottom:60px">
+      <div class="eyebrow">Architecture</div>
+      <h2 class="h2">Three loops.<br><span class="serif-italic">One backbone.</span></h2>
+      <p class="lede" style="margin-top:22px">TRC² stacks cortical columns in the center and wraps them in two feedback loops. The thalamus shapes every column's attention from causal past state. The hippocampus writes, retrieves, and replays events around the cortical stream. Scroll to step through it.</p>
     </div>
-    <div class="components-grid">
-      <div class="comp-card reveal" style="--card-accent: var(--cortex);">
-        <h3>Cortical Columns</h3>
-        <p>Each column: RMSNorm → GQA Attention (with thalamic Q-modulation + RoPE) → residual → RMSNorm → Routed MoE (SwiGLU, top-k of E experts + shared) → residual → L5 projection. Stacked L deep, split into early and late stacks at ℓ<sub>inj</sub>.</p>
-        <span class="comp-tag">GQA · MoE · SwiGLU · RoPE</span>
+
+    <div class="arch-sticky">
+      <div class="arch-viz-inner" id="archViz">
+        <canvas id="archCanvas" style="display:block"></canvas>
+        <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
+          <button class="chip active" id="archBtnSpeed" onclick="window.archToggleSpeed&&window.archToggleSpeed()">1× Speed</button>
+          <button class="chip active" id="archBtnLabels" onclick="window.archToggleLabels&&window.archToggleLabels()">Labels</button>
+        </div>
       </div>
-      <div class="comp-card reveal" style="--card-accent: var(--thalamus);">
-        <h3>Thalamic Router</h3>
-        <p>Transforms L5 output C<sup>(ℓ)</sup> into causal feedback F<sub>thal</sub> for the next column's Q. Compresses to rank r, forms local (focal) + diffuse (past-mean) paths gated by surprise, then applies TRN groupwise divisive competition.</p>
-        <span class="comp-tag">Local · Diffuse · TRN · Surprise</span>
-      </div>
-      <div class="comp-card reveal" style="--card-accent: var(--hippocampus);">
-        <h3>Hippocampal Memory</h3>
-        <p>Content-addressable episodic store with chunked exact top-k retrieval. TD critic with fast/slow predictors. Deferred causal writes after backward. Two replay buffers (recent ring + long-term reservoir). Adaptive controller adjusts λ<sub>rep</sub>, B<sub>R</sub>, ρ<sub>long</sub> online.</p>
-        <span class="comp-tag">TD · Deferred Write · Replay · Controller</span>
+
+      <div class="arch-steps" id="archSteps">
+        <div class="arch-step active" data-step="0">
+          <div class="num">STAGE 01 · INPUT</div>
+          <h3>Tokens enter a single embedding.</h3>
+          <p>Weight-tied with the output head, no absolute position encodings. The hidden state <span class="mono">H⁽⁰⁾</span> flows down the center column — the only path that stays fully differentiable end-to-end.</p>
+          <div class="mono-eq">H⁽⁰⁾ = Dropout(E[x₁:T]) ∈ ℝᴮˣᵀˣᵈ</div>
+        </div>
+        <div class="arch-step" data-step="1">
+          <div class="num">STAGE 02 · EARLY CORTEX</div>
+          <h3>Columns compute. RoPE-GQA + routed SwiGLU MoE.</h3>
+          <p>Each column is the standard backbone: RMSNorm → grouped-query attention with RoPE → RMSNorm → MoE (top-k of E, plus a shared expert) → residual. Stable, known, fast.</p>
+          <div class="mono-eq">H⁽ℓ⁾ = H⁽ℓ⁻¹⁾ + A(U) + M(V)</div>
+        </div>
+        <div class="arch-step" data-step="2">
+          <div class="num">STAGE 03 · THALAMIC ROUTER</div>
+          <h3>Deep-layer activity becomes causal feedback.</h3>
+          <p>The thalamus compresses <span class="mono">C⁽ℓ⁾</span> to rank <em>r</em>, mixes a <em>local</em> focal path with a <em>diffuse past-only</em> average, gates by TD-surprise, then runs groupwise divisive TRN competition. The output <span class="mono">Z</span> modulates the next column's queries.</p>
+          <div class="mono-eq">Z⁽ℓ⁾ = TRN(G_focal · F_local + G_diffuse · F_past)</div>
+        </div>
+        <div class="arch-step" data-step="3">
+          <div class="num">STAGE 04 · HIPPOCAMPAL MEMORY</div>
+          <h3>Read now. Write later. Never cheat causality.</h3>
+          <p>Content-addressable exact top-k reads on <span class="mono">H⁽ℓᵢₙⱼ⁾</span>. A fast/slow TD critic emits surprise. Writes are <em>stashed</em> during the forward pass and flushed only after backward — so the read at step t can never see its own future. Replay samples from past chunks only.</p>
+          <div class="mono-eq">write(t) = δ_fast − δ_slow  ·  flush_after_backward()</div>
+        </div>
+        <div class="arch-step" data-step="4">
+          <div class="num">STAGE 05 · FEEDBACK GATE</div>
+          <h3>Two signals merge. The late stack reads one input.</h3>
+          <p>A sigmoid gate combines detached cortical state with the memory readout to produce <span class="mono">F_hip</span>, which is added to the carried thalamic signal at a single Σ node. Late columns never see memory directly — only the merged side-input.</p>
+          <div class="mono-eq">F_hip = σ(a) · W_hip→thal(G ⊙ M)</div>
+        </div>
+        <div class="arch-step" data-step="5">
+          <div class="num">STAGE 06 · LATE CORTEX → LOGITS</div>
+          <h3>Main hidden state continues. Side-input shapes attention.</h3>
+          <p>Late columns keep the column-to-column thalamic loop and receive the merged thalamus+hippo signal as Q-modulation. Final RMSNorm, tied lm_head, logits out. Replay bypasses all feedback paths — it just re-runs the embedding → columns → lm_head bus.</p>
+          <div class="mono-eq">logits = RMSNorm(H⁽ᴸ⁾) · Eᵀ</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="section-divider"></div>
+<!-- ═══════════ DIVIDER ═══════════ -->
+<div class="wrap"><div class="hr"><span class="hr-glyph">§</span></div></div>
 
-<!-- ═══════════════════════════ ANIMATED TOKEN FLOW ═══════════════════════════ -->
-<section id="method" class="token-flow-section">
-  <div class="wide-container">
+<!-- ═══════════ SECTION: RADAR ═══════════ -->
+<section id="radar">
+  <div class="wrap">
     <div class="reveal">
-      <div class="section-label">Live Visualization</div>
-      <div class="section-title">Animated Token Flow Through TRC²</div>
-      <div class="section-body">
-        <p>Watch token particles flow through the complete TRC² architecture — color-coded by subsystem. <span style="color:#4ecdc4">■</span> Cortex  <span style="color:#ff6b35">■</span> Thalamus  <span style="color:#a78bfa">■</span> Hippocampus  <span style="color:#f472b6">■</span> Feedback Gate  <span style="color:#34d399">■</span> Replay</p>
-      </div>
+      <div class="eyebrow">Multi-metric comparison</div>
+      <h2 class="h2">Outer is better.<br><span class="serif-italic">TRC² owns the hull.</span></h2>
+      <p class="lede" style="margin-top:22px">Best configuration per architecture. Perplexity axes are inverted and log-scaled. Click any model to toggle. The red hexagon is TRC² (408M, d<sub>m</sub>=768, n<sub>b</sub>=8).</p>
     </div>
 
-    <div class="canvas-outer reveal">
-      <canvas id="tokenFlowCanvas"></canvas>
-      <div class="canvas-controls">
-        <button id="btnSpeed" class="active" onclick="toggleSpeed()">1× Speed</button>
-        <button id="btnLabels" class="active" onclick="toggleLabels()">Labels</button>
+    <div class="radar-block reveal">
+      <svg id="radarSvg" viewBox="-300 -300 600 600"></svg>
+      <div class="radar-models" id="radarLegend"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: HEATMAP ═══════════ -->
+<section id="heat">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Retention across shuffles</div>
+      <h2 class="h2">Pick any ordering.<br><span class="serif-italic">The red row still wins.</span></h2>
+      <p class="lede" style="margin-top:22px">AUFC at 22k across five task-sequence shuffles. Dark cells are bad (lots of forgetting). TRC² is the only row where every cell stays cool.</p>
+    </div>
+
+    <div class="heat-wrap reveal">
+      <div class="heat-title">
+        <div class="stream-title" id="heatTitle">Perplexity AUFC · lower is better</div>
+        <div class="heat-tabs">
+          <button class="chip active" data-metric="ppl">PPL</button>
+          <button class="chip" data-metric="bleu">BLEU</button>
+          <button class="chip" data-metric="tok">TokAcc</button>
+        </div>
+      </div>
+      <div class="heat-grid" id="heatGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: ORDER ROULETTE ═══════════ -->
+<section id="order">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Order-robustness lab</div>
+      <h2 class="h2">Shuffle the stream.<br><span class="serif-italic">Pick a stress test.</span></h2>
+      <p class="lede" style="margin-top:22px">Every continual-learning paper shows one ordering. We show all five. Pick an adversary.</p>
+    </div>
+
+    <div class="order-wrap">
+      <div class="order-pick reveal">
+        <div class="stream-title">Choose a task shuffle</div>
+        <div class="order-chips" id="orderChips">
+          <button class="obtn active" data-o="CGW">C→G→W <span class="pill">1.98×</span></button>
+          <button class="obtn" data-o="GCW">G→C→W <span class="pill">1.84×</span></button>
+          <button class="obtn" data-o="GWC">G→W→C <span class="pill">1.04×</span></button>
+          <button class="obtn" data-o="WCG">W→C→G <span class="pill">1.20×</span></button>
+          <button class="obtn" data-o="WGC">W→G→C <span class="pill">2.48×</span></button>
+        </div>
+        <p class="body" style="margin-top:22px;font-size:.9rem">The pill shows how much better TRC² is than the best baseline for that specific ordering. Revisiting a task late in the stream (W→G→C) is where every baseline suffers most — and where TRC² wins biggest.</p>
+      </div>
+
+      <div class="order-viz reveal">
+        <div class="stream-title">Head-to-head · <span class="mono" style="color:var(--ink-faint);font-size:.85rem">PPL AUFC @ 22k</span></div>
+
+        <div style="margin-top:24px">
+          <div class="order-label"><span>TRC² · ours</span><span class="num" id="ordTrc">0.46</span></div>
+          <div class="order-bar"><div class="fill trc2" id="ordTrcBar" style="width:24%">0.46</div></div>
+        </div>
+
+        <div style="margin-top:20px">
+          <div class="order-label"><span id="ordBaseName">Best baseline · FALCON</span><span class="num" id="ordBase">0.91</span></div>
+          <div class="order-bar"><div class="fill base" id="ordBaseBar" style="width:48%">0.91</div></div>
+        </div>
+
+        <div class="order-advantage">
+          <div class="big num" id="ordAdvBig">1.98×</div>
+          <div class="lbl"><span id="ordAdvPct">49%</span> less forgetting than the strongest baseline</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<div class="section-divider"></div>
+<!-- ═══════════ SECTION: ABLATION LAB ═══════════ -->
+<section id="lab">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Ablation lab</div>
+      <h2 class="h2">Turn the knobs.<br><span class="serif-italic">See what each loop actually does.</span></h2>
+      <p class="lede" style="margin-top:22px">Both switches off is a vanilla MoE backbone. Hippocampus alone helps retention but drifts. Thalamus alone is competitive at endpoints but forgets. Both together is TRC². The numbers below are real Table 3 entries from the paper.</p>
+    </div>
 
-<!-- ═══════════════════════════ RESULTS ═══════════════════════════ -->
+    <div class="lab-wrap">
+      <div class="lab-knobs reveal">
+        <div class="stream-title">Components</div>
+        <div class="knob thal on" id="knobThal">
+          <div class="knob-sw"></div>
+          <div class="knob-lbl"><div class="n">Thalamic router</div><div class="d">Causal Q-modulation · TRN competition</div></div>
+        </div>
+        <div class="knob hippo on" id="knobHippo">
+          <div class="knob-sw"></div>
+          <div class="knob-lbl"><div class="n">Hippocampal memory</div><div class="d">TD surprise · deferred write · replay</div></div>
+        </div>
+        <div class="lab-verdict" id="labVerdict">Full TRC². Best retention profile across all three AUFC metrics — worst throughput.</div>
+      </div>
+
+      <div class="lab-result reveal">
+        <div class="stream-title">AUFC @ 22k · <span class="mono" style="font-size:.85rem;color:var(--ink-faint)" id="labConfig">thal ✓ · hippo ✓</span></div>
+        <div class="lab-vals">
+          <div class="lab-val best" id="labPpl"><div class="l">PPL AUFC</div><div class="v num">0.44</div></div>
+          <div class="lab-val best" id="labBleu"><div class="l">BLEU AUFC</div><div class="v num">0.12</div></div>
+          <div class="lab-val best" id="labTok"><div class="l">TokAcc AUFC</div><div class="v num">0.08</div></div>
+        </div>
+        <canvas id="labCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: RESULTS TABLE ═══════════ -->
 <section id="results">
-  <div class="wide-container">
+  <div class="wrap">
     <div class="reveal">
-      <div class="section-label">Experiments</div>
-      <div class="section-title">Results</div>
-      <div class="section-body">
-        <p>TRC² is evaluated under a task-sequential language-modeling stream: C4 → WikiText-103 → GSM8K (22k optimizer steps total, 4× V100 GPUs). All baselines share the same pipeline.</p>
-      </div>
+      <div class="eyebrow">Full results</div>
+      <h2 class="h2">The raw numbers.<br><span class="serif-italic">No spin.</span></h2>
+      <p class="lede" style="margin-top:22px">Task-boundary scores at 10k/20k/22k across every model × every size. Best in column highlighted. TRC² rows in red.</p>
     </div>
 
-    <!-- Key numbers -->
-    <div class="components-grid reveal" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-top: 40px;">
-      <div class="comp-card" style="--card-accent: var(--cortex); text-align: center; padding: 24px;">
-        <div style="font-size: 2.4rem; font-weight: 700; font-family: var(--font-display); color: var(--cortex);">33.5</div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">C4 PPL (best baseline: 68.7)</div>
-      </div>
-      <div class="comp-card" style="--card-accent: var(--cortex); text-align: center; padding: 24px;">
-        <div style="font-size: 2.4rem; font-weight: 700; font-family: var(--font-display); color: var(--cortex);">21.7</div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">Wiki PPL (best: 28.9)</div>
-      </div>
-      <div class="comp-card" style="--card-accent: var(--cortex); text-align: center; padding: 24px;">
-        <div style="font-size: 2.4rem; font-weight: 700; font-family: var(--font-display); color: var(--cortex);">29.9</div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">GSM PPL (best: 1.7k)</div>
-      </div>
-      <div class="comp-card" style="--card-accent: var(--hippocampus); text-align: center; padding: 24px;">
-        <div style="font-size: 2.4rem; font-weight: 700; font-family: var(--font-display); color: var(--hippocampus);">0.44</div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">PPL AUFC (best: 1.11)</div>
-      </div>
-      <div class="comp-card" style="--card-accent: var(--hippocampus); text-align: center; padding: 24px;">
-        <div style="font-size: 2.4rem; font-weight: 700; font-family: var(--font-display); color: var(--hippocampus);">0.12</div>
-        <div style="color: var(--text-muted); font-size: 0.82rem;">BLEU AUFC (best: 0.74)</div>
-      </div>
-    </div>
-
-    <!-- TABLE 1: Task-boundary performance (FULL) -->
-    <div class="reveal" style="margin-top: 56px; overflow-x: auto;">
-      <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 4px;">Table 1: Task-Boundary Performance</h3>
-      <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Scores at task boundaries (steps 10k, 20k, 22k). BLEU at C4/Wiki boundaries, token accuracy on GSM8K.</p>
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: var(--font-mono); white-space: nowrap;">
-        <thead><tr style="background: var(--table-header);">
-          <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border-color);">Model</th>
-          <th style="padding:8px;text-align:center;">Params</th><th style="padding:8px;text-align:center;">d<sub>m</sub></th><th style="padding:8px;text-align:center;">n<sub>b</sub></th>
-          <th style="padding:8px;text-align:center;">C4↓</th><th style="padding:8px;text-align:center;">Wiki↓</th><th style="padding:8px;text-align:center;">GSM↓</th>
-          <th style="padding:8px;text-align:center;">C4 txt↑</th><th style="padding:8px;text-align:center;">Wiki txt↑</th><th style="padding:8px;text-align:center;">GSM%↑</th>
-          <th style="padding:8px;text-align:center;">Tok/s↑</th><th style="padding:8px;text-align:center;">GB·h↓</th>
-        </tr></thead>
-        <tbody>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">Transformer</td><td style="padding:6px;text-align:center">144M</td><td style="padding:6px;text-align:center">512</td><td style="padding:6px;text-align:center">28</td><td style="padding:6px;text-align:center">93.17</td><td style="padding:6px;text-align:center">33.83</td><td style="padding:6px;text-align:center">1.7k</td><td style="padding:6px;text-align:center">7.90</td><td style="padding:6px;text-align:center">16.15</td><td style="padding:6px;text-align:center">51.42</td><td style="padding:6px;text-align:center">93k</td><td style="padding:6px;text-align:center">157</td></tr>
-          <tr><td style="padding:6px">Transformer</td><td style="padding:6px;text-align:center">228M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">20</td><td style="padding:6px;text-align:center">76.27</td><td style="padding:6px;text-align:center">29.94</td><td style="padding:6px;text-align:center">2.8k</td><td style="padding:6px;text-align:center">8.06</td><td style="padding:6px;text-align:center">16.78</td><td style="padding:6px;text-align:center">53.09</td><td style="padding:6px;text-align:center">84k</td><td style="padding:6px;text-align:center">202</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">Transformer</td><td style="padding:6px;text-align:center">321M</td><td style="padding:6px;text-align:center">1024</td><td style="padding:6px;text-align:center">16</td><td style="padding:6px;text-align:center">70.68</td><td style="padding:6px;text-align:center">28.90</td><td style="padding:6px;text-align:center">2.8k</td><td style="padding:6px;text-align:center">7.78</td><td style="padding:6px;text-align:center">16.69</td><td style="padding:6px;text-align:center">53.41</td><td style="padding:6px;text-align:center">73k</td><td style="padding:6px;text-align:center">266</td></tr>
-          <tr><td style="padding:6px">MoE</td><td style="padding:6px;text-align:center">345M</td><td style="padding:6px;text-align:center">512</td><td style="padding:6px;text-align:center">16</td><td style="padding:6px;text-align:center">99.28</td><td style="padding:6px;text-align:center">35.71</td><td style="padding:6px;text-align:center">2.3k</td><td style="padding:6px;text-align:center">7.32</td><td style="padding:6px;text-align:center">15.96</td><td style="padding:6px;text-align:center">51.01</td><td style="padding:6px;text-align:center">76k</td><td style="padding:6px;text-align:center">238</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">MoE</td><td style="padding:6px;text-align:center">441M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">10</td><td style="padding:6px;text-align:center">94.32</td><td style="padding:6px;text-align:center">34.47</td><td style="padding:6px;text-align:center">6.4k</td><td style="padding:6px;text-align:center">6.83</td><td style="padding:6px;text-align:center">14.91</td><td style="padding:6px;text-align:center">50.09</td><td style="padding:6px;text-align:center">78k</td><td style="padding:6px;text-align:center">235</td></tr>
-          <tr><td style="padding:6px">MoE</td><td style="padding:6px;text-align:center">493M</td><td style="padding:6px;text-align:center">1024</td><td style="padding:6px;text-align:center">6</td><td style="padding:6px;text-align:center">136.04</td><td style="padding:6px;text-align:center">36.75</td><td style="padding:6px;text-align:center">18k</td><td style="padding:6px;text-align:center">4.70</td><td style="padding:6px;text-align:center">13.69</td><td style="padding:6px;text-align:center">47.46</td><td style="padding:6px;text-align:center">91k</td><td style="padding:6px;text-align:center">211</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">Mamba</td><td style="padding:6px;text-align:center">151M</td><td style="padding:6px;text-align:center">512</td><td style="padding:6px;text-align:center">28</td><td style="padding:6px;text-align:center">110.15</td><td style="padding:6px;text-align:center">37.31</td><td style="padding:6px;text-align:center">15k</td><td style="padding:6px;text-align:center">6.51</td><td style="padding:6px;text-align:center">14.60</td><td style="padding:6px;text-align:center">42.49</td><td style="padding:6px;text-align:center">77k</td><td style="padding:6px;text-align:center">229</td></tr>
-          <tr><td style="padding:6px">Mamba</td><td style="padding:6px;text-align:center">202M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">18</td><td style="padding:6px;text-align:center">97.53</td><td style="padding:6px;text-align:center">34.50</td><td style="padding:6px;text-align:center">49k</td><td style="padding:6px;text-align:center">5.85</td><td style="padding:6px;text-align:center">14.52</td><td style="padding:6px;text-align:center">43.59</td><td style="padding:6px;text-align:center">76k</td><td style="padding:6px;text-align:center">255</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">Mamba</td><td style="padding:6px;text-align:center">245M</td><td style="padding:6px;text-align:center">1024</td><td style="padding:6px;text-align:center">12</td><td style="padding:6px;text-align:center">95.25</td><td style="padding:6px;text-align:center">33.01</td><td style="padding:6px;text-align:center">92k</td><td style="padding:6px;text-align:center">5.92</td><td style="padding:6px;text-align:center">15.41</td><td style="padding:6px;text-align:center">44.01</td><td style="padding:6px;text-align:center">84k</td><td style="padding:6px;text-align:center">226</td></tr>
-          <tr><td style="padding:6px">DeepSeek</td><td style="padding:6px;text-align:center">338M</td><td style="padding:6px;text-align:center">512</td><td style="padding:6px;text-align:center">14</td><td style="padding:6px;text-align:center">71.59</td><td style="padding:6px;text-align:center">33.09</td><td style="padding:6px;text-align:center">1.8k</td><td style="padding:6px;text-align:center">8.54</td><td style="padding:6px;text-align:center">16.58</td><td style="padding:6px;text-align:center">54.20</td><td style="padding:6px;text-align:center">88k</td><td style="padding:6px;text-align:center">220</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">DeepSeek</td><td style="padding:6px;text-align:center">308M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">6</td><td style="padding:6px;text-align:center">80.84</td><td style="padding:6px;text-align:center">32.75</td><td style="padding:6px;text-align:center">6.9k</td><td style="padding:6px;text-align:center">7.53</td><td style="padding:6px;text-align:center">15.75</td><td style="padding:6px;text-align:center">52.80</td><td style="padding:6px;text-align:center"><b>118k</b></td><td style="padding:6px;text-align:center">142</td></tr>
-          <tr><td style="padding:6px">DeepSeek</td><td style="padding:6px;text-align:center">545M</td><td style="padding:6px;text-align:center">1024</td><td style="padding:6px;text-align:center">6</td><td style="padding:6px;text-align:center">68.71</td><td style="padding:6px;text-align:center">33.22</td><td style="padding:6px;text-align:center">8.3k</td><td style="padding:6px;text-align:center">7.39</td><td style="padding:6px;text-align:center">16.73</td><td style="padding:6px;text-align:center">53.28</td><td style="padding:6px;text-align:center">87k</td><td style="padding:6px;text-align:center">246</td></tr>
-          <tr style="background:rgba(78,205,196,0.1);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² (ours)</td><td style="padding:6px;text-align:center">149M</td><td style="padding:6px;text-align:center">256</td><td style="padding:6px;text-align:center">24</td><td style="padding:6px;text-align:center">52.48</td><td style="padding:6px;text-align:center">27.59</td><td style="padding:6px;text-align:center">56.36</td><td style="padding:6px;text-align:center">8.31</td><td style="padding:6px;text-align:center">17.44</td><td style="padding:6px;text-align:center">55.49</td><td style="padding:6px;text-align:center">29k</td><td style="padding:6px;text-align:center">515</td></tr>
-          <tr style="background:rgba(78,205,196,0.07);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² (ours)</td><td style="padding:6px;text-align:center">254M</td><td style="padding:6px;text-align:center">512</td><td style="padding:6px;text-align:center">10</td><td style="padding:6px;text-align:center">37.43</td><td style="padding:6px;text-align:center">23.09</td><td style="padding:6px;text-align:center">42.99</td><td style="padding:6px;text-align:center">9.76</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>19.31</b></td><td style="padding:6px;text-align:center">57.90</td><td style="padding:6px;text-align:center">61k</td><td style="padding:6px;text-align:center">259</td></tr>
-          <tr style="background:rgba(78,205,196,0.1);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² (ours)</td><td style="padding:6px;text-align:center">226M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">4</td><td style="padding:6px;text-align:center">38.06</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>21.73</b></td><td style="padding:6px;text-align:center">31.28</td><td style="padding:6px;text-align:center">9.28</td><td style="padding:6px;text-align:center">18.11</td><td style="padding:6px;text-align:center">57.19</td><td style="padding:6px;text-align:center">103k</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>134</b></td></tr>
-          <tr style="background:rgba(78,205,196,0.07);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² (ours)</td><td style="padding:6px;text-align:center">408M</td><td style="padding:6px;text-align:center">768</td><td style="padding:6px;text-align:center">8</td><td style="padding:6px;text-align:center">34.29</td><td style="padding:6px;text-align:center">25.04</td><td style="padding:6px;text-align:center">35.70</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>9.84</b></td><td style="padding:6px;text-align:center">19.16</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>59.03</b></td><td style="padding:6px;text-align:center">59k</td><td style="padding:6px;text-align:center">349</td></tr>
-          <tr style="background:rgba(78,205,196,0.1);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² (ours)</td><td style="padding:6px;text-align:center">560M</td><td style="padding:6px;text-align:center">1024</td><td style="padding:6px;text-align:center">6</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>33.49</b></td><td style="padding:6px;text-align:center">26.95</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>29.87</b></td><td style="padding:6px;text-align:center">9.55</td><td style="padding:6px;text-align:center">18.65</td><td style="padding:6px;text-align:center">58.80</td><td style="padding:6px;text-align:center">60k</td><td style="padding:6px;text-align:center">211</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- TABLE 2: CL AUFC (FULL) -->
-    <div class="reveal" style="margin-top: 48px; overflow-x: auto;">
-      <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 4px;">Table 2: Continual-Learning Retention (AUFC)</h3>
-      <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Area-under-forgetting-curve at steps 20k and 22k. Lower = better retention.</p>
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; font-family: var(--font-mono); white-space: nowrap;">
-        <thead><tr style="background: var(--table-header);">
-          <th style="padding:8px;text-align:left;">Model</th><th style="padding:8px;text-align:center;">Params</th>
-          <th style="padding:8px;text-align:center;">PPL 20k↓</th><th style="padding:8px;text-align:center;">PPL 22k↓</th>
-          <th style="padding:8px;text-align:center;">BLEU 20k↓</th><th style="padding:8px;text-align:center;">BLEU 22k↓</th>
-          <th style="padding:8px;text-align:center;">TokAcc 20k↓</th><th style="padding:8px;text-align:center;">TokAcc 22k↓</th>
-        </tr></thead>
-        <tbody>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">Transformer 512</td><td style="padding:6px;text-align:center">144M</td><td style="padding:6px;text-align:center">1.16</td><td style="padding:6px;text-align:center">1.15</td><td style="padding:6px;text-align:center">2.21</td><td style="padding:6px;text-align:center">1.33</td><td style="padding:6px;text-align:center">0.21</td><td style="padding:6px;text-align:center">0.15</td></tr>
-          <tr><td style="padding:6px">Transformer 768</td><td style="padding:6px;text-align:center">228M</td><td style="padding:6px;text-align:center">1.23</td><td style="padding:6px;text-align:center">1.30</td><td style="padding:6px;text-align:center">2.16</td><td style="padding:6px;text-align:center">1.30</td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.15</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">MoE 1024</td><td style="padding:6px;text-align:center">493M</td><td style="padding:6px;text-align:center">1.11</td><td style="padding:6px;text-align:center">1.22</td><td style="padding:6px;text-align:center">1.22</td><td style="padding:6px;text-align:center">0.74</td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.14</td></tr>
-          <tr><td style="padding:6px">Mamba 1024</td><td style="padding:6px;text-align:center">245M</td><td style="padding:6px;text-align:center">1.12</td><td style="padding:6px;text-align:center">1.34</td><td style="padding:6px;text-align:center">1.50</td><td style="padding:6px;text-align:center">0.93</td><td style="padding:6px;text-align:center">0.21</td><td style="padding:6px;text-align:center">0.15</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px">DeepSeek 1024</td><td style="padding:6px;text-align:center">545M</td><td style="padding:6px;text-align:center">1.21</td><td style="padding:6px;text-align:center">1.40</td><td style="padding:6px;text-align:center">1.75</td><td style="padding:6px;text-align:center">1.08</td><td style="padding:6px;text-align:center">0.18</td><td style="padding:6px;text-align:center">0.13</td></tr>
-          <tr style="background:rgba(78,205,196,0.1);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² 256</td><td style="padding:6px;text-align:center">149M</td><td style="padding:6px;text-align:center">0.71</td><td style="padding:6px;text-align:center">0.49</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>0.18</b></td><td style="padding:6px;text-align:center">0.12</td><td style="padding:6px;text-align:center">0.13</td><td style="padding:6px;text-align:center">0.08</td></tr>
-          <tr style="background:rgba(78,205,196,0.07);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² 768-l4</td><td style="padding:6px;text-align:center">226M</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>0.63</b></td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>0.44</b></td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.12</td><td style="padding:6px;text-align:center">0.13</td><td style="padding:6px;text-align:center">0.08</td></tr>
-          <tr style="background:rgba(78,205,196,0.1);font-weight:600"><td style="padding:6px;color:var(--cortex)">TRC² 1024</td><td style="padding:6px;text-align:center">560M</td><td style="padding:6px;text-align:center">0.70</td><td style="padding:6px;text-align:center">0.48</td><td style="padding:6px;text-align:center">0.18</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>0.12</b></td><td style="padding:6px;text-align:center">0.13</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)"><b>0.08</b></td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- TABLE 3: Ablation (FULL) -->
-    <div class="reveal" style="margin-top: 48px; overflow-x: auto;">
-      <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 4px;">Table 3: Ablation Study (d768-l4)</h3>
-      <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Upper: last-step scores at 22k. Lower: AUFC retention at 20k and 22k.</p>
-      <table style="width: 100%; max-width: 900px; border-collapse: collapse; font-size: 0.78rem; font-family: var(--font-mono);">
-        <thead><tr style="background: var(--table-header);">
-          <th style="padding:8px;text-align:center;">Thal.</th><th style="padding:8px;text-align:center;">Hippo.</th>
-          <th style="padding:8px;text-align:center;">C4 PPL</th><th style="padding:8px;text-align:center;">Wiki PPL</th><th style="padding:8px;text-align:center;">GSM PPL</th>
-          <th style="padding:8px;text-align:center;">C4 txt</th><th style="padding:8px;text-align:center;">Wiki txt</th><th style="padding:8px;text-align:center;">GSM %</th>
-          <th style="padding:8px;text-align:center;">Tok/s</th><th style="padding:8px;text-align:center;">GB·h</th>
-        </tr></thead>
-        <tbody>
-          <tr style="background:rgba(78,205,196,0.08);font-weight:600"><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">990</td><td style="padding:6px;text-align:center">68.7</td><td style="padding:6px;text-align:center">31.3</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">4.05</td><td style="padding:6px;text-align:center">15.0</td><td style="padding:6px;text-align:center">57.2</td><td style="padding:6px;text-align:center">103k</td><td style="padding:6px;text-align:center">134</td></tr>
-          <tr><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center">1285</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">55.3</td><td style="padding:6px;text-align:center">30.9</td><td style="padding:6px;text-align:center">3.23</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">15.5</td><td style="padding:6px;text-align:center">57.2</td><td style="padding:6px;text-align:center">109k</td><td style="padding:6px;text-align:center">131</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">2016</td><td style="padding:6px;text-align:center">613</td><td style="padding:6px;text-align:center">27.4</td><td style="padding:6px;text-align:center">1.82</td><td style="padding:6px;text-align:center">3.28</td><td style="padding:6px;text-align:center">57.7</td><td style="padding:6px;text-align:center">147k</td><td style="padding:6px;text-align:center">95</td></tr>
-          <tr><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">2050</td><td style="padding:6px;text-align:center">550</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">26.8</td><td style="padding:6px;text-align:center">2.30</td><td style="padding:6px;text-align:center">4.50</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">58.5</td><td style="padding:6px;text-align:center"><b>154k</b></td><td style="padding:6px;text-align:center"><b>87</b></td></tr>
-        </tbody>
-      </table>
-      <br>
-      <table style="width: 100%; max-width: 820px; border-collapse: collapse; font-size: 0.78rem; font-family: var(--font-mono);">
-        <thead><tr style="background: var(--table-header);">
-          <th style="padding:8px;text-align:center;">Thal.</th><th style="padding:8px;text-align:center;">Hippo.</th>
-          <th style="padding:8px;text-align:center;">PPL 20k↓</th><th style="padding:8px;text-align:center;">PPL 22k↓</th>
-          <th style="padding:8px;text-align:center;">BLEU 20k↓</th><th style="padding:8px;text-align:center;">BLEU 22k↓</th>
-          <th style="padding:8px;text-align:center;">TokAcc 20k↓</th><th style="padding:8px;text-align:center;">TokAcc 22k↓</th>
-        </tr></thead>
-        <tbody>
-          <tr style="background:rgba(78,205,196,0.08);font-weight:600"><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.63</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.44</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.20</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.12</td><td style="padding:6px;text-align:center">0.13</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.08</td></tr>
-          <tr><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center">0.86</td><td style="padding:6px;text-align:center">0.56</td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.13</td><td style="padding:6px;text-align:center;font-weight:700;color:var(--cortex)">0.12</td><td style="padding:6px;text-align:center">0.08</td></tr>
-          <tr style="background:var(--table-row-alt)"><td style="padding:6px;text-align:center;color:var(--dendrite)">✓</td><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">1.19</td><td style="padding:6px;text-align:center">0.76</td><td style="padding:6px;text-align:center">0.26</td><td style="padding:6px;text-align:center">0.19</td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.15</td></tr>
-          <tr><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">✗</td><td style="padding:6px;text-align:center">1.23</td><td style="padding:6px;text-align:center">0.78</td><td style="padding:6px;text-align:center">0.26</td><td style="padding:6px;text-align:center">0.20</td><td style="padding:6px;text-align:center">0.21</td><td style="padding:6px;text-align:center">0.16</td></tr>
-        </tbody>
-      </table>
-      <p style="color: var(--text-muted); font-size: 0.82rem; margin-top: 12px;">The full model (✓/✓) achieves the best retention profile. Removing hippocampal memory causes the largest degradation in AUFC. Removing both increases throughput but sharply degrades retention.</p>
-    </div>
-  </div>
-</section>
-
-<div class="section-divider"></div>
-
-<!-- ═══════════════════════════ DISCUSSION ═══════════════════════════ -->
-<section id="discussion">
-  <div class="container">
-    <div class="reveal">
-      <div class="section-label">Discussion & Conclusion</div>
-      <div class="section-title">Making Interference Control Part of the Forward Pass</div>
-      <div class="section-body">
-        <p>TRC² improves the task-boundary quality frontier: the strongest variants dominate baselines on WikiText-103 and GSM8K while remaining competitive on C4. The improvement is mirrored by stronger boundary BLEU and token accuracy, suggesting gains reflect better retained representational structure.</p>
-        <p>The retention story is even clearer. TRC² consistently achieves the lowest forgetting area, with its largest margin in perplexity AUFC. This supports the central premise: separating fast adaptation from the main cortical pathway through thalamic modulation, episodic memory, and replay leads to less destructive interference over the task stream.</p>
-        <p>The ablation clarifies where the advantage comes from. Removing either component can improve some endpoint metrics, but these simplifications degrade cumulative retention. The global modules materially alter how plasticity is distributed across training.</p>
-        <p>The broader conclusion: continual language modeling benefits from an explicit architectural separation between stable computation and fast, localized plasticity. TRC² shows this can be realized in a modern decoder, improving both quality and retention under a realistic training pipeline.</p>
+    <div class="heat-wrap reveal" style="margin-top:40px;padding:0">
+      <div style="overflow-x:auto">
+        <table id="bigTable" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem;min-width:720px">
+          <thead>
+            <tr style="background:#0a0a14">
+              <th style="padding:14px 12px;text-align:left;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Model</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Params</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">C4 ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Wiki ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">GSM ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Wiki BLEU ↑</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">GSM % ↑</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">PPL AUFC ↓</th>
+            </tr>
+          </thead>
+          <tbody id="bigTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
-<footer class="footer">
-  <div class="container">
-    <p>TRC² — Thalamically Routed Cortical Columns · Afshin Khadangi · SnT, University of Luxembourg</p>
-    <p style="margin-top: 8px;">2026 · Working Paper</p>
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer id="paper">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <h4>TRC<sup style="font-size:.6em">2</sup> — Thalamically Routed Cortical Columns</h4>
+      <p>Efficient continual learning in language models via biologically grounded sparse routing and fast correction.</p>
+    </div>
+    <div class="foot-col">
+      <h5>Paper</h5>
+      <a href="https://arxiv.org/abs/2602.22479">arXiv preprint ↗</a>
+      <a href="https://api.wandb.ai/links/afshin-khadangi-university-of-luxembourg/fzk2ecqo">W&B training logs ↗</a>
+      <a href="https://trc2lm.github.io">Project site ↗</a>
+    </div>
+    <div class="foot-col">
+      <h5>Author</h5>
+      <a href="https://afshin.xyz">Afshin Khadangi</a>
+      <a href="mailto:afshin.khadanki@uni.lu">afshin.khadanki@uni.lu</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 · Afshin Khadangi · preprint</span>
   </div>
 </footer>
 
-<!-- ═══════════════════════════ SCRIPTS ═══════════════════════════ -->
-<script>
-function toggleTheme(){const h=document.documentElement;h.setAttribute('data-theme',h.getAttribute('data-theme')==='dark'?'light':'dark');}
-const nav=document.getElementById('nav');window.addEventListener('scroll',()=>{if(window.scrollY>400)nav.classList.add('visible');else nav.classList.remove('visible');});
-const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');if(e.target.querySelector('.chart-bar-fill'))e.target.querySelectorAll('.chart-bar-fill').forEach(b=>{b.style.width=b.dataset.target+'%';});}});},{threshold:0.1,rootMargin:'0px 0px -60px 0px'});
-document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
-
-// ── Hero Neural Canvas ──
-const canvas=document.getElementById('neural-canvas');
-if(canvas){
-const ctx=canvas.getContext('2d');let mouseX=0,mouseY=0,mouseIn=false;
-function resizeCanvas(){canvas.width=canvas.offsetWidth*(window.devicePixelRatio||1);canvas.height=canvas.offsetHeight*(window.devicePixelRatio||1);ctx.setTransform(window.devicePixelRatio||1,0,0,window.devicePixelRatio||1,0,0);}
-canvas.parentElement.addEventListener('mousemove',e=>{const r=canvas.getBoundingClientRect();let x=e.clientX-r.left,y=e.clientY-r.top;const m=160;x=Math.max(m,Math.min(x,r.width-m));y=Math.max(m,Math.min(y,r.height-m));mouseX=x;mouseY=y;mouseIn=true;});
-canvas.parentElement.addEventListener('mouseleave',()=>{mouseIn=false;});
-const TAU=Math.PI*2,neurons=[],NUM_N=60;
-for(let i=0;i<NUM_N;i++){const phi=Math.acos(1-2*(i+.5)/NUM_N),theta=TAU*i/((1+Math.sqrt(5))/2),r=180+Math.random()*60;neurons.push({ox:Math.sin(phi)*Math.cos(theta)*r,oy:Math.sin(phi)*Math.sin(theta)*r*.65,oz:Math.cos(phi)*r,x:0,y:0,z:0,sx:0,sy:0,depth:0,r:1.5+Math.random()*2.5,pulse:Math.random()*TAU,speed:.4+Math.random()*.6,type:Math.random(),connections:[],fire:0});}
-for(let i=0;i<NUM_N;i++){const d=[];for(let j=0;j<NUM_N;j++){if(i===j)continue;const dx=neurons[i].ox-neurons[j].ox,dy=neurons[i].oy-neurons[j].oy,dz=neurons[i].oz-neurons[j].oz;d.push({j,d:Math.sqrt(dx*dx+dy*dy+dz*dz)});}d.sort((a,b)=>a.d-b.d);neurons[i].connections=d.slice(0,3+Math.floor(Math.random()*3)).map(x=>x.j);}
-const impulses=[];function spawnImpulse(){const f=Math.floor(Math.random()*NUM_N),c=neurons[f].connections;if(!c.length)return;impulses.push({from:f,to:c[Math.floor(Math.random()*c.length)],t:0,speed:.008+Math.random()*.015,hue:Math.random()});}for(let i=0;i<80;i++)spawnImpulse();
-const chasers=[];for(let i=0;i<50;i++)chasers.push({x:Math.random()*1200,y:Math.random()*800,vx:0,vy:0,sz:.8+Math.random()*2,phase:Math.random()*TAU,hue:Math.random()});
-function hueCol(h,a){const C=[[78,205,196],[167,139,250],[244,114,182],[34,211,238],[96,165,250],[253,224,71]];const idx=h*C.length,i0=Math.floor(idx)%C.length,i1=(i0+1)%C.length,f=idx-Math.floor(idx);return`rgba(${Math.round(C[i0][0]+(C[i1][0]-C[i0][0])*f)},${Math.round(C[i0][1]+(C[i1][1]-C[i0][1])*f)},${Math.round(C[i0][2]+(C[i1][2]-C[i0][2])*f)},${a})`;}
-let time=0,rotY=0,rotX=.15;
-function project(x,y,z,cw,ch){const fov=500,s=fov/(fov+z);return{x:cw/2+x*s,y:ch/2+y*s,s,z};}
-function drawNeural(){time += .016;const cw = canvas.offsetWidth, ch = canvas.offsetHeight;ctx.clearRect(0, 0, cw, ch);
-const bottomSafeZone = 110;ctx.save();ctx.beginPath();ctx.rect(0, 0, cw, ch - bottomSafeZone);ctx.clip();
-rotY += .003;const tRX = mouseIn ? (mouseY / ch - .5) * .6 : .15;const tRYD = mouseIn ? (mouseX / cw - .5) * .4 : 0;rotX += (tRX - rotX) * .02;const cY=Math.cos(rotY+tRYD),sY=Math.sin(rotY+tRYD),cX=Math.cos(rotX),sX=Math.sin(rotX);neurons.forEach(n=>{const b=1+Math.sin(time*n.speed+n.pulse)*.06;let x=n.ox*b,y=n.oy*b,z=n.oz*b,x2=x*cY-z*sY,z2=x*sY+z*cY,y2=y*cX-z2*sX,z3=y*sX+z2*cX;n.x=x2;n.y=y2;n.z=z3;const p=project(x2,y2,z3,cw,ch);n.sx=p.x;n.sy=p.y;n.depth=p.s;if(mouseIn){const dx=mouseX-n.sx,dy=mouseY-n.sy,d=Math.sqrt(dx*dx+dy*dy);if(d<200){n.fire=Math.min(1,n.fire+.06);n.sx+=dx*.03;n.sy+=dy*.03;}}n.fire*=.97;n.pulse+=.02;});
-const sorted=neurons.map((n,i)=>({i,z:n.z})).sort((a,b)=>a.z-b.z);sorted.forEach(({i})=>{const n=neurons[i];n.connections.forEach(j=>{const m=neurons[j],alpha=Math.max(0,Math.min(.2,(n.depth+m.depth)*.15))+(n.fire+m.fire)*.1;ctx.beginPath();const cx=(n.sx+m.sx)/2+Math.sin(time+i+j)*8*((n.depth+m.depth)/2),cy=(n.sy+m.sy)/2+Math.cos(time*.7+i*j*.01)*8;ctx.moveTo(n.sx,n.sy);ctx.quadraticCurveTo(cx,cy,m.sx,m.sy);ctx.strokeStyle=hueCol((n.type+m.type)/2,alpha);ctx.lineWidth=.4+(n.fire+m.fire)*1.5;ctx.stroke();});});
-for(let i=impulses.length-1;i>=0;i--){const imp=impulses[i];imp.t+=imp.speed;if(imp.t>=1){impulses.splice(i,1);spawnImpulse();continue;}const a=neurons[imp.from],b=neurons[imp.to],px=a.sx+(b.sx-a.sx)*imp.t,py=a.sy+(b.sy-a.sy)*imp.t,al=Math.sin(imp.t*Math.PI)*.6,sz=1.2+Math.sin(imp.t*Math.PI);ctx.beginPath();ctx.arc(px,py,sz,0,TAU);ctx.fillStyle=hueCol(imp.hue,al);ctx.fill();ctx.beginPath();ctx.arc(px,py,sz*3,0,TAU);ctx.fillStyle=hueCol(imp.hue,al*.1);ctx.fill();}
-sorted.reverse().forEach(({i})=>{const n=neurons[i],sz=(n.r+Math.sin(time*2+n.pulse)*.8+n.fire*4)*n.depth,alpha=.15+n.depth*.25+n.fire*.5;const g=ctx.createRadialGradient(n.sx,n.sy,0,n.sx,n.sy,sz*8);g.addColorStop(0,hueCol(n.type,.06+n.fire*.15));g.addColorStop(1,hueCol(n.type,0));ctx.fillStyle=g;ctx.fillRect(n.sx-sz*8,n.sy-sz*8,sz*16,sz*16);ctx.beginPath();ctx.arc(n.sx,n.sy,sz,0,TAU);ctx.fillStyle=hueCol(n.type,alpha);ctx.fill();ctx.beginPath();ctx.arc(n.sx,n.sy,sz*.4,0,TAU);ctx.fillStyle=hueCol(n.type,alpha+.3);ctx.fill();});
-chasers.forEach(p=>{if(mouseIn){const dx=mouseX-p.x,dy=mouseY-p.y,d=Math.sqrt(dx*dx+dy*dy);if(d>1){const acc=Math.min(.6,150/(d+30));p.vx+=(dx/d*acc+Math.sin(time*4+p.phase)*.4)*.3;p.vy+=(dy/d*acc+Math.cos(time*3.7+p.phase)*.4)*.3;}if(d<50){p.vx+=(-dy/d*1.2)*.1;p.vy+=(dx/d*1.2)*.1;}}else{p.vx+=Math.sin(time*.5+p.phase)*.03;p.vy+=Math.cos(time*.4+p.phase*2)*.03;}const edgePad = 40;const bottomPad = 120;p.x = Math.max(edgePad, Math.min(cw - edgePad, p.x));p.y = Math.max(edgePad, Math.min(ch - bottomPad, p.y));p.vx*=.95;p.vy*=.95;p.x+=p.vx;p.y+=p.vy;if(p.x<-30)p.x=cw+30;if(p.x>cw+30)p.x=-30;if(p.y<-30)p.y=ch+30;if(p.y>ch+30)p.y=-30;const pulse=.3+Math.sin(time*3+p.phase)*.2,s=p.sz*(.8+Math.sin(time*2+p.phase)*.3);ctx.beginPath();ctx.arc(p.x,p.y,s,0,TAU);ctx.fillStyle=hueCol(p.hue,pulse);ctx.fill();ctx.beginPath();ctx.arc(p.x,p.y,s*4,0,TAU);ctx.fillStyle=hueCol(p.hue,pulse*.08);ctx.fill();});
-if(mouseIn){const g=ctx.createRadialGradient(mouseX,mouseY,0,mouseX,mouseY,140);g.addColorStop(0,'rgba(78,205,196,0.1)');g.addColorStop(.3,'rgba(167,139,250,0.05)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(mouseX-140,mouseY-140,280,280);}
-ctx.restore();requestAnimationFrame(drawNeural);}
-resizeCanvas();drawNeural();window.addEventListener('resize',resizeCanvas);
-}
-
-// ── Particles ──
-const pc=document.getElementById('particles');if(pc){for(let i=0;i<30;i++){const p=document.createElement('div');p.className='particle';p.style.left=Math.random()*100+'%';p.style.animationDuration=(15+Math.random()*25)+'s';p.style.animationDelay=Math.random()*10+'s';p.style.width=p.style.height=(1+Math.random()*2)+'px';pc.appendChild(p);}}
-document.querySelectorAll('.nav-links a').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(a.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'});});});
-
-// ═══════════════════════════════════════════════════
-// ANIMATED TOKEN FLOW — aligned to CortexNet.forward()
-// fixes:
-//   1) explicit carried thalamic signal into late stack
-//   2) hippo feedback merges with thalamic side-input, not main x-stream
-//   3) lighter module colors / clearer labels
-// ═══════════════════════════════════════════════════
-(function(){
-const cvs=document.getElementById('tokenFlowCanvas');if(!cvs)return;
-const c=cvs.getContext('2d');let W,H,dpr,showLabels=true,speedMult=1,time=0;
-
-// Global font scaling for the token-flow canvas
-const LABEL_FONT_SCALE = 1.22;   // free labels
-const BOX_FONT_SCALE   = 1.18;   // text inside rounded boxes
-
-const COL={
-  cortexFill:'rgba(147,197,253,0.12)',
-  cortexStroke:'rgba(96,165,250,0.42)',
-  cortexText:'rgba(219,234,254,0.96)',
-  cortexSub:'rgba(191,219,254,0.74)',
-
-  lateFill:'rgba(125,211,252,0.10)',
-  lateStroke:'rgba(56,189,248,0.34)',
-  lateText:'rgba(224,242,254,0.92)',
-  lateSub:'rgba(186,230,253,0.66)',
-
-  thalFill:'rgba(253,224,71,0.12)',
-  thalStroke:'rgba(251,191,36,0.40)',
-  thalText:'rgba(254,240,138,0.96)',
-  thalSub:'rgba(254,240,138,0.72)',
-
-  hippoFill:'rgba(196,181,253,0.12)',
-  hippoStroke:'rgba(167,139,250,0.38)',
-  hippoText:'rgba(237,233,254,0.96)',
-  hippoSub:'rgba(221,214,254,0.72)',
-
-  gateFill:'rgba(251,207,232,0.12)',
-  gateStroke:'rgba(244,114,182,0.36)',
-  gateText:'rgba(252,231,243,0.96)',
-  gateSub:'rgba(252,231,243,0.72)',
-
-  replayFill:'rgba(187,247,208,0.10)',
-  replayStroke:'rgba(52,211,153,0.34)',
-  replayText:'rgba(220,252,231,0.94)',
-  replaySub:'rgba(220,252,231,0.70)',
-
-  neutralFill:'rgba(255,255,255,0.05)',
-  neutralStroke:'rgba(203,213,225,0.26)',
-  neutralText:'rgba(226,232,240,0.76)',
-  neutralSub:'rgba(226,232,240,0.54)',
-
-  flowMain:'rgba(147,197,253,A)',
-  flowThal:'rgba(251,191,36,A)',
-  flowHippo:'rgba(196,181,253,A)',
-  flowGate:'rgba(244,114,182,A)',
-  flowReplay:'rgba(74,222,128,A)',
-  flowResidual:'rgba(203,213,225,A)'
-};
-
-function resize(){
-  dpr=window.devicePixelRatio||1;
-  const r=cvs.parentElement.getBoundingClientRect();
-  W=r.width;
-  H=Math.max(920,W*0.86);
-  cvs.width=W*dpr;
-  cvs.height=H*dpr;
-  cvs.style.height=H+'px';
-  c.setTransform(dpr,0,0,dpr,0,0);
-}
-resize();
-window.addEventListener('resize',resize);
-
-// ── primitives ──
-function rr(x,y,w,h,r){
-  c.beginPath();
-  c.moveTo(x+r,y);
-  c.lineTo(x+w-r,y);
-  c.quadraticCurveTo(x+w,y,x+w,y+r);
-  c.lineTo(x+w,y+h-r);
-  c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
-  c.lineTo(x+r,y+h);
-  c.quadraticCurveTo(x,y+h,x,y+h-r);
-  c.lineTo(x,y+r);
-  c.quadraticCurveTo(x,y,x+r,y);
-}
-function box(x,y,w,h,fc,sc,txt,tc,fs){
-  rr(x,y,w,h,5);
-  c.fillStyle=fc;
-  c.fill();
-  c.strokeStyle=sc;
-  c.lineWidth=1;
-  c.stroke();
-  if(txt&&showLabels){
-    c.fillStyle=tc||sc;
-    c.font=((fs||7)*BOX_FONT_SCALE)+'px "DM Mono", monospace';
-    c.textAlign='center';
-    c.textBaseline='middle';
-    c.fillText(txt,x+w/2,y+h/2);
-    c.textBaseline='alphabetic';
-  }
-}
-function ln(x1,y1,x2,y2,col,lw,dash){
-  if(dash)c.setLineDash(dash);
-  c.beginPath();
-  c.moveTo(x1,y1);
-  c.lineTo(x2,y2);
-  c.strokeStyle=col;
-  c.lineWidth=lw||.8;
-  c.stroke();
-  if(dash)c.setLineDash([]);
-}
-function pln(pts,col,lw,dash){
-  if(dash)c.setLineDash(dash);
-  c.beginPath();
-  c.moveTo(pts[0][0],pts[0][1]);
-  for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);
-  c.strokeStyle=col;
-  c.lineWidth=lw||.8;
-  c.stroke();
-  if(dash)c.setLineDash([]);
-}
-function lbl(x,y,t,col,al,fs){
-  if(!showLabels)return;
-  c.fillStyle=col;
-  c.font=((fs||7)*LABEL_FONT_SCALE)+'px "DM Mono", monospace';
-  c.textAlign=al||'center';
-  c.fillText(t,x,y);
-}
-function tip(x,y,d,s,col){
-  c.beginPath();
-  if(d==='d'){
-    c.moveTo(x-s,y-s);c.lineTo(x,y);c.lineTo(x+s,y-s);
-  }else if(d==='r'){
-    c.moveTo(x-s,y-s);c.lineTo(x,y);c.lineTo(x-s,y+s);
-  }else if(d==='l'){
-    c.moveTo(x+s,y-s);c.lineTo(x,y);c.lineTo(x+s,y+s);
-  }else{
-    c.moveTo(x-s,y+s);c.lineTo(x,y);c.lineTo(x+s,y+s);
-  }
-  c.strokeStyle=col;
-  c.lineWidth=1.3;
-  c.stroke();
-}
-
-// ── layout ──
-function L(){
-  const mx=W*.40, bw=W*.32, bx=mx-bw/2, br=bx+bw;
-  const thX=br+W*.03, thW=W*.19;
-  const hpX=mx+W*.10, hpW=W*.31;
-  const gtW=W*.12, gtX=bx-W*.03-gtW;
-  const bh=16, bs=13;
-  const mergeX=br+W*.055, mergeY=H*.765;
-
-  return {
-    mx,bx,bw,br,thX,thW,hpX,hpW,gtX,gtW,bh,bs,mergeX,mergeY,
-    inpY:H*.032,
-    ecT:H*.075, ecB:H*.42,
-    n1:H*.10, at:H*.145, r1:H*.215, n2:H*.245, mo:H*.285, r2:H*.34, l5:H*.375, rptY:H*.40,
-    thT:H*.095, thB:H*.41,
-    spY:H*.46,
-    hpT:H*.44, hpB:H*.70,
-    gtY:H*.605,
-    lcT:H*.74, lcB:H*.85,
-    nrmY:H*.885, outY:H*.925
-  };
-}
-
-// ── waypoint particle ──
-class WP{
-  constructor(wp,col,spd,sz){
-    this.wp=wp;this.col=col;this.spd=spd;this.sz=sz||1.5;this.t=Math.random();
-    this.segs=[];this.total=0;
-    for(let i=1;i<wp.length;i++){
-      const dx=wp[i][0]-wp[i-1][0], dy=wp[i][1]-wp[i-1][1];
-      const d=Math.sqrt(dx*dx+dy*dy);
-      this.segs.push(d); this.total+=d;
-    }
-  }
-  pos(){
-    let d=this.t*this.total;
-    for(let i=0;i<this.segs.length;i++){
-      if(d<=this.segs[i]){
-        const f=d/this.segs[i];
-        return {
-          x:this.wp[i][0]+(this.wp[i+1][0]-this.wp[i][0])*f,
-          y:this.wp[i][1]+(this.wp[i+1][1]-this.wp[i][1])*f
-        };
-      }
-      d-=this.segs[i];
-    }
-    return {x:this.wp[this.wp.length-1][0],y:this.wp[this.wp.length-1][1]};
-  }
-  update(){this.t=(this.t+this.spd*speedMult*.003)%1;}
-  draw(){
-    const p=this.pos(),a=.26+Math.sin(this.t*Math.PI)*.34;
-    c.beginPath();
-    c.arc(p.x,p.y,this.sz,0,Math.PI*2);
-    c.fillStyle=this.col.replace('A)',a+')');
-    c.fill();
-    c.beginPath();
-    c.arc(p.x,p.y,this.sz*3.5,0,Math.PI*2);
-    c.fillStyle=this.col.replace('A)',(a*.12)+')');
-    c.fill();
-  }
-}
-
-let particles=[];
-function buildParticles(){
-  particles=[]; const l=L();
-
-  // 1a) main hidden-state stream x: input -> early stack -> enter late stack
-  for(let i=0;i<10;i++)particles.push(new WP([
-    [l.mx,l.inpY+l.bh],
-    [l.mx,l.n1],
-    [l.mx,l.at],
-    [l.mx,l.r1],
-    [l.mx,l.n2],
-    [l.mx,l.mo],
-    [l.mx,l.r2],
-    [l.mx,l.l5],
-    [l.mx,l.spY],
-    [l.mx,l.lcT]
-  ],COL.flowMain,.56+Math.random()*.24,1.25+Math.random()));
-
-  // 1b) motion inside late stack 
-  for(let i=0;i<8;i++)particles.push(new WP([
-    [l.mx,l.lcT],
-    [l.mx,l.lcB]
-  ],COL.flowMain,.42+Math.random()*.16,1.20+Math.random()*.8));
-
-  // 1c) exit from late stack -> norm -> logits  (slower)
-  for(let i=0;i<8;i++)particles.push(new WP([
-    [l.mx,l.lcB],
-    [l.mx,l.nrmY],
-    [l.mx,l.outY]
-  ],COL.flowMain,.24+Math.random()*.10,1.20+Math.random()*.8));
-
-  // 2) early thalamocortical loop: C^(ℓ) -> thalamus -> next early column Q
-  const cOutY   = l.l5 + l.bs/2;
-  const thInY   = l.thT + (l.thB - l.thT) * 0.22;
-  const cToThX  = l.br + 18;   // same elbow used in draw()
-  const thLoopX = l.br + 24;   // same shifted return rail used in draw()
-
-  for(let i=0;i<8;i++)particles.push(new WP([
-    [l.br,                cOutY],
-    [cToThX,              cOutY],
-    [cToThX,              thInY],
-    [l.thX,               thInY],
-    [l.thX + l.thW/2,     l.thT + (l.thB - l.thT) * 0.30],
-    [l.thX + l.thW/2,     l.thB - 10],
-    [l.thX + l.thW/2,     l.thB + 10],
-    [thLoopX,             l.thB + 10],
-    [thLoopX,             l.at + l.bh],
-    [l.br + 2,            l.at + l.bh]
-  ],COL.flowThal,.42+Math.random()*.22,1.1+Math.random()*.7));
-
-  // 3) carried thalamic signal into the late stack
-  for(let i=0;i<5;i++)particles.push(new WP([
-    [l.thX+l.thW/2,l.thB-8],[l.thX+l.thW/2,l.thB+8],[l.mergeX,l.thB+8],[l.mergeX,l.mergeY]
-  ],COL.flowThal,.26+Math.random()*.14,1.0+Math.random()*.45));
-
-  // 4) merged side-input enters late stack attention path
-  for(let i=0;i<5;i++)particles.push(new WP([
-    [l.mergeX,l.mergeY],[l.br+2,l.mergeY],[l.br+2,l.lcT+18]
-  ],COL.flowThal,.28+Math.random()*.14,1.0+Math.random()*.5));
-
-  // 5) H^(ℓinj) -> hippocampus
-  for(let i=0;i<6;i++)particles.push(new WP([
-    [l.mx+4,l.spY],[l.hpX,l.spY],[l.hpX+18,l.hpT+28],[l.hpX+42,l.hpT+28]
-  ],COL.flowHippo,.36+Math.random()*.18,1.1+Math.random()*.5));
-
-  // 6) mem_readout -> feedback gate
-  for(let i=0;i<5;i++)particles.push(new WP([
-    [l.hpX+8,l.gtY],[l.mx+10,l.gtY],[l.gtX+l.gtW,l.gtY]
-  ],COL.flowHippo,.34+Math.random()*.16,1.1+Math.random()*.5));
-
-  // 7) sg(H^(ℓinj)) -> feedback gate
-  for(let i=0;i<4;i++)particles.push(new WP([
-    [l.mx,l.spY+2],[l.mx,l.gtY-10],[l.gtX+l.gtW,l.gtY-10]
-  ],COL.flowResidual,.28+Math.random()*.14,.95));
-
-  // 8) F_hip -> merge node -> late stack side-input
-  for(let i=0;i<6;i++)particles.push(new WP([
-    [l.gtX+l.gtW/2,l.gtY+22],[l.gtX+l.gtW/2,l.mergeY],[l.mergeX,l.mergeY]
-  ],COL.flowGate,.30+Math.random()*.16,1.05+Math.random()*.45));
-
-  // 9) replay path
-  for(let i=0;i<4;i++)particles.push(new WP([
-    [l.hpX+l.hpW,l.hpT+96],[l.hpX+l.hpW+16,l.hpT+96],[l.hpX+l.hpW+16,l.inpY+l.bh/2],[l.br,l.inpY+l.bh/2]
-  ],COL.flowReplay,.22+Math.random()*.12,.95+Math.random()*.45));
-}
-buildParticles();
-window.addEventListener('resize',()=>{resize();buildParticles();});
-
-function draw(){
-  time+=.016*speedMult;
-  c.clearRect(0,0,W,H);
-  const l=L();
-
-  // INPUT
-  box(l.bx,l.inpY,l.bw,l.bh,'rgba(254,240,138,.10)','rgba(251,191,36,.42)','H⁽⁰⁾ = Dropout(E[x₁:T]) ∈ ℝᴮˣᵀˣᵈ','rgba(255,247,200,.92)',8);
-  lbl(l.mx,l.inpY+l.bh+10,'E ∈ ℝⱽˣᵈ · no abs pos emb · weight-tied with lm_head','rgba(255,247,200,.58)','center',5.5);
-  ln(l.mx,l.inpY+l.bh,l.mx,l.ecT,'rgba(226,232,240,.18)');
-  tip(l.mx,l.ecT,'d',3,'rgba(226,232,240,.30)');
-
-  // EARLY CORTEX
-  rr(l.bx-8,l.ecT,l.bw+16,l.ecB-l.ecT,8);
-  c.fillStyle=COL.cortexFill; c.fill();
-  c.strokeStyle=COL.cortexStroke; c.lineWidth=1.4; c.stroke();
-  lbl(l.bx-2,l.ecT+11,'EARLY CORTICAL STACK','rgba(219,234,254,.92)','left',7.5);
-  lbl(l.br+8,l.ecT+11,'ℓ = 1…ℓᵢₙⱼ','rgba(191,219,254,.62)','right',6.5);
-
-  box(l.bx+10,l.n1,l.bw-20,l.bs,COL.neutralFill,COL.neutralStroke,'U = RMSNorm(H⁽ℓ⁻¹⁾)',COL.neutralText,7);
-  ln(l.mx,l.n1+l.bs,l.mx,l.at,'rgba(226,232,240,.10)');
-  box(l.bx+10,l.at,l.bw-20,l.bh*2,'rgba(191,219,254,.10)','rgba(147,197,253,.36)','Grouped-Query Causal Self-Attention + RoPE',COL.cortexText,7.5);
-  lbl(l.mx,l.at+l.bh*2+8,'column 1 gets no thalamic input; later early columns get previous Z via Q-mod','rgba(191,219,254,.58)','center',5.2);
-  ln(l.mx,l.at+l.bh*2,l.mx,l.r1,'rgba(226,232,240,.10)');
-  tip(l.mx,l.r1,'d',2.5,'rgba(226,232,240,.24)');
-  box(l.bx+10,l.r1,l.bw-20,l.bs,COL.neutralFill,COL.neutralStroke,'H̃ = H⁽ℓ⁻¹⁾ + Dropout(A)',COL.neutralText,6.5);
-  ln(l.mx,l.r1+l.bs,l.mx,l.n2,'rgba(226,232,240,.10)');
-  box(l.bx+10,l.n2,l.bw-20,l.bs,COL.neutralFill,COL.neutralStroke,'V_moe = RMSNorm(H̃)',COL.neutralText,7);
-  ln(l.mx,l.n2+l.bs,l.mx,l.mo,'rgba(226,232,240,.10)');
-  box(l.bx+10,l.mo,l.bw-20,l.bh*1.5,'rgba(216,180,254,.10)','rgba(196,181,253,.28)','Routed MoE (SwiGLU) · E=8 k_E=2 + shared','rgba(233,213,255,.86)',7);
-  ln(l.mx,l.mo+l.bh*1.5,l.mx,l.r2,'rgba(226,232,240,.10)');
-  tip(l.mx,l.r2,'d',2.5,'rgba(226,232,240,.24)');
-  box(l.bx+10,l.r2,l.bw-20,l.bs,COL.neutralFill,COL.neutralStroke,'H⁽ℓ⁾ = H̃ + Dropout(M)',COL.neutralText,6.5);
-  ln(l.mx,l.r2+l.bs,l.mx,l.l5,'rgba(226,232,240,.10)');
-  box(l.bx+10,l.l5,l.bw-20,l.bs,'rgba(191,219,254,.08)','rgba(147,197,253,.24)','C⁽ℓ⁾ = W_L5 · H⁽ℓ⁾',COL.cortexSub,7);
-  lbl(l.mx,l.rptY,'repeat for ℓ = 1…ℓᵢₙⱼ','rgba(191,219,254,.42)','center',6);
-
-  pln([[l.bx,l.n1+l.bs/2],[l.bx-8,l.n1+l.bs/2],[l.bx-8,l.r1+l.bs/2],[l.bx,l.r1+l.bs/2]],'rgba(203,213,225,.18)',.7,[3,3]);
-  tip(l.bx,l.r1+l.bs/2,'r',2,'rgba(203,213,225,.24)');
-  pln([[l.bx,l.r1+l.bs/2],[l.bx-14,l.r1+l.bs/2],[l.bx-14,l.r2+l.bs/2],[l.bx,l.r2+l.bs/2]],'rgba(203,213,225,.18)',.7,[3,3]);
-  tip(l.bx,l.r2+l.bs/2,'r',2,'rgba(203,213,225,.24)');
-
-  // THALAMIC ROUTER
-  rr(l.thX,l.thT,l.thW,l.thB-l.thT,7);
-  c.fillStyle=COL.thalFill; c.fill();
-  c.strokeStyle=COL.thalStroke; c.lineWidth=1.2; c.stroke();
-  lbl(l.thX+l.thW/2,l.thT+12,'THALAMIC ROUTER',COL.thalText,'center',7.5);
-
-  const thIY=l.thT+26;
-  lbl(l.thX+l.thW/2,thIY,'Causal inter-column feedback',COL.thalSub,'center',6);
-  lbl(l.thX+l.thW/2,thIY+14,'compress → local + past-only diffuse',COL.thalSub,'center',5.4);
-  lbl(l.thX+l.thW/2,thIY+26,'state mixes focal and diffuse paths before TRN competition',COL.thalSub,'center',5.0);
-  box(l.thX+8,thIY+38,l.thW-16,l.bh,'rgba(254,240,138,.08)','rgba(251,191,36,.22)','TRN competition (groupwise divisive)',COL.thalText,5.8);
-  lbl(l.thX+l.thW/2,l.thB-14,'output Z feeds NEXT column attention q',COL.thalSub,'center',6.0);
-
-  // C^(ℓ) -> thalamus  (clean elbow, not broken-looking)
-  const cOutY = l.l5 + l.bs/2;
-  const thInY = l.thT + (l.thB - l.thT) * 0.22;
-  const cToThX = l.br + 18;
-
-  pln([
-    [l.br, cOutY],
-    [cToThX, cOutY],
-    [cToThX, thInY],
-    [l.thX, thInY]
-  ],'rgba(251,191,36,.28)',1.1);
-
-  tip(l.thX, thInY, 'r', 2.5, 'rgba(251,191,36,.36)');
-  lbl(l.br+4, l.l5+4, 'C⁽ℓ⁾', 'rgba(254,240,138,.70)', 'left', 6);
-
-  // thalamus -> next early column  (moved farther right to avoid border overlap)
-  const thLoopX = l.br + 24;
-
-  pln([
-    [l.thX + l.thW/2, l.thB],
-    [l.thX + l.thW/2, l.thB + 10],
-    [thLoopX,          l.thB + 10],
-    [thLoopX,          l.at + l.bh],
-    [l.br + 2,         l.at + l.bh]
-  ],'rgba(251,191,36,.30)',1.0,[5,3]);
-
-  tip(l.br + 2, l.at + l.bh, 'l', 2.5, 'rgba(251,191,36,.38)');
-  lbl(l.thX + l.thW * 0.46, (l.thB + l.at)/2 + 10, 'Z⁽ℓ⁾ → column ℓ+1 (early stack)', COL.thalSub, 'center', 5.3);
-
-  // carried thalamic signal continues into the late stack
-  pln([[l.thX+l.thW/2,l.thB],[l.thX+l.thW/2,l.thB+8],[l.mergeX,l.thB+8],[l.mergeX,l.mergeY-7]],'rgba(251,191,36,.26)',1.0,[6,4]);
-  tip(l.mergeX,l.mergeY-7,'d',2.5,'rgba(251,191,36,.34)');
-  lbl(l.mergeX+8,(l.thB+l.mergeY)/2-8,'carried thalamic_signal also enters late stack',COL.thalSub,'left',5.1);
-
-  // SPLIT
-  ln(l.mx,l.ecB,l.mx,l.spY,'rgba(226,232,240,.14)',1);
-  c.beginPath();
-  c.arc(l.mx,l.spY,5,0,Math.PI*2);
-  c.fillStyle='rgba(147,197,253,.18)';
-  c.fill();
-  c.strokeStyle='rgba(147,197,253,.40)';
-  c.lineWidth=1;
-  c.stroke();
-  lbl(l.mx-26,l.spY-8,'H⁽ℓᵢₙⱼ⁾','rgba(219,234,254,.80)','right',7.5);
-
-  // H^(ℓinj) -> hippocampus
-  ln(l.mx+5,l.spY,l.hpX,l.spY,'rgba(196,181,253,.28)',1.2);
-  tip(l.hpX,l.spY,'r',3,'rgba(196,181,253,.38)');
-  lbl((l.mx+l.hpX)/2,l.spY-8,'H⁽ℓᵢₙⱼ⁾ → hippocampus(x)','rgba(221,214,254,.68)','center',5.4);
-
-  // HIPPOCAMPAL MEMORY
-  rr(l.hpX,l.hpT,l.hpW,l.hpB-l.hpT,8);
-  c.fillStyle=COL.hippoFill; c.fill();
-  c.strokeStyle=COL.hippoStroke; c.lineWidth=1.4; c.stroke();
-  lbl(l.hpX+l.hpW/2,l.hpT+12,'HIPPOCAMPAL MEMORY',COL.hippoText,'center',7.5);
-
-  const hw=(l.hpW-24)/2;
-  box(l.hpX+8,l.hpT+22,hw,l.bh+4,'rgba(221,214,254,.08)','rgba(196,181,253,.22)','read(x): exact top-k KV retrieval',COL.hippoText,5.7);
-  box(l.hpX+16+hw,l.hpT+22,hw,l.bh+4,'rgba(221,214,254,.08)','rgba(196,181,253,.22)','TD critic + fast/slow predictor',COL.hippoText,5.3);
-  box(l.hpX+8,l.hpT+48,l.hpW-16,l.bs+2,'rgba(221,214,254,.06)','rgba(196,181,253,.18)','forward stashes writes → flush after backward',COL.hippoSub,5.2);
-  const replayX = l.hpX + 8;
-  const replayY = l.hpT + 72;
-  const replayW = l.hpW - 16;
-  const replayH = l.bh * 3.0;   // slightly taller than before
-
-  box(replayX, replayY, replayW, replayH, COL.replayFill, COL.replayStroke, '', COL.replayText, 6.5);
-
-  lbl(l.hpX + l.hpW/2, replayY + 18, 'Replay: sample past chunks only', COL.replayText, 'center', 6.0);
-  lbl(l.hpX + l.hpW/2, replayY + 31, 'recent ring + long-term reservoir', COL.replaySub, 'center', 4.8);
-  lbl(l.hpX + l.hpW/2, replayY + 43, 'replay_ids → emb → columns → lm_head', COL.replaySub, 'center', 4.5);
-
-  const memDotCount = 10;   // more dots across the bottom
-
-  for(let i=0;i<memDotCount;i++){
-    const sx = l.hpX + 16 + i * ((l.hpW - 32) / (memDotCount - 1));
-    const sy = l.hpB - 22;
-
-    // faster flashing + stronger opacity swing
-    const a = 0.16 + Math.sin(time * 3.2 + i * 1.0) * 0.14;
-
-    // larger pulsing size
-    const r = 3.8 + Math.sin(time * 3.2 + i * 1.0) * 1.1;
-
-    c.beginPath();
-    c.arc(sx, sy, r, 0, Math.PI * 2);
-    c.fillStyle = 'rgba(196,181,253,' + Math.max(0.05, a) + ')';
-    c.fill();
-
-    // soft glow around each dot
-    c.beginPath();
-    c.arc(sx, sy, r * 2.6, 0, Math.PI * 2);
-    c.fillStyle = 'rgba(196,181,253,' + Math.max(0.02, a * 0.14) + ')';
-    c.fill();
-  }
-  lbl(l.hpX+l.hpW/2,l.hpB-8,'mem_keys · mem_vals · N_slots = 512',COL.hippoSub,'center',5);
-
-  // mem_readout -> gate
-  pln([[l.hpX+8,l.gtY],[l.mx+10,l.gtY],[l.gtX+l.gtW,l.gtY]],'rgba(196,181,253,.24)',1.0,[4,3]);
-  tip(l.gtX+l.gtW,l.gtY,'l',2.5,'rgba(196,181,253,.34)');
-  lbl(l.mx+28,l.gtY-6,'M = mem_readout',COL.hippoText,'left',6);
-
-  // FEEDBACK GATE
-  rr(l.gtX,l.gtY-l.bh,l.gtW,l.bh*2.8,5);
-  c.fillStyle=COL.gateFill; c.fill();
-  c.strokeStyle=COL.gateStroke; c.lineWidth=1; c.stroke();
-  lbl(l.gtX+l.gtW/2,l.gtY-4,'HIPPO FEEDBACK GATE',COL.gateText,'center',6.2);
-  lbl(l.gtX+l.gtW/2,l.gtY+10,'G = σ(W_g[sg(H), M] + b)',COL.gateSub,'center',5.1);
-  lbl(l.gtX+l.gtW/2,l.gtY+22,'F_hip = σ(a)·W_hip→thal(G ⊙ M)',COL.gateSub,'center',4.8);
-
-  // detached cortical state -> gate
-  pln([[l.mx,l.spY+2],[l.mx,l.gtY-10],[l.gtX+l.gtW,l.gtY-10]],'rgba(203,213,225,.18)',.9,[3,3]);
-  tip(l.gtX+l.gtW,l.gtY-10,'l',2.5,'rgba(203,213,225,.26)');
-  lbl(l.mx-6,l.gtY-14,'sg(H⁽ℓᵢₙⱼ⁾)',COL.neutralSub,'right',5.2);
-
-  // merge node: thalamus + hippo feedback
-  c.beginPath();
-  c.arc(l.mergeX,l.mergeY,7,0,Math.PI*2);
-  c.fillStyle='rgba(255,255,255,.05)';
-  c.fill();
-  c.strokeStyle='rgba(255,255,255,.22)';
-  c.lineWidth=1;
-  c.stroke();
-  lbl(l.mergeX,l.mergeY+2,'Σ','rgba(255,255,255,.72)','center',7);
-
-  lbl(l.mergeX+6,l.mergeY-12,'th_in = thalamic_signal + hippo_feedback', 'rgba(255,255,255,.44)','left',5.2);
-  lbl(l.mergeX+6,l.mergeY-2,'this is what late columns receive as thalamic side-input', 'rgba(255,255,255,.32)','left',4.8);
-
-  // gate -> merge
-  pln([[l.gtX+l.gtW/2,l.gtY+28],[l.gtX+l.gtW/2,l.mergeY],[l.mergeX-7,l.mergeY]],'rgba(244,114,182,.24)',1.0,[4,3]);
-  tip(l.mergeX-7,l.mergeY,'r',2.5,'rgba(244,114,182,.34)');
-  lbl(l.gtX+l.gtW/2+8,l.mergeY-6,'F_hip',COL.gateText,'left',6);
-
-  // main x stream continues separately
-  ln(l.mx,l.spY,l.mx,l.lcT,'rgba(226,232,240,.10)');
-
-  // LATE CORTEX
-  rr(l.bx-8,l.lcT,l.bw+16,l.lcB-l.lcT,8);
-  c.fillStyle=COL.lateFill; c.fill();
-  c.strokeStyle=COL.lateStroke; c.lineWidth=1.3; c.stroke();
-  lbl(l.bx-2,l.lcT+12,'LATE CORTICAL STACK',COL.lateText,'left',7.5);
-  lbl(l.br+8,l.lcT+12,'ℓ = ℓᵢₙⱼ+1…L',COL.lateSub,'right',6.5);
-
-  lbl(l.mx,l.lcT+28,'main hidden state x continues down the center',COL.lateSub,'center',5.4);
-  lbl(l.mx,l.lcT+40,'late attention gets thalamic Q-mod from the merged side-input',COL.lateSub,'center',5.1);
-  lbl(l.mx,l.lcT+52,'late columns still keep their own column-to-column thalamic loop',COL.thalSub,'center',5.0);
-
-  // explicit orange entry into late stack
-  pln([[l.mergeX+7,l.mergeY],[l.br+2,l.mergeY],[l.br+2,l.lcT+18]],'rgba(251,191,36,.30)',1.0,[5,3]);
-  tip(l.br+2,l.lcT+18,'u',2.5,'rgba(251,191,36,.38)');
-
-  // orange rail showing thalamic loop continues inside late stack
-  pln([[l.br+14,l.lcT+18],[l.br+24,l.lcT+18],[l.br+24,l.lcB-8],[l.br+14,l.lcB-8]],'rgba(251,191,36,.18)',.9,[4,3]);
-  lbl(l.br+28,(l.lcT+l.lcB)/2,'Z keeps updating across late columns',COL.thalSub,'left',4.8);
-
-  ln(l.mx,l.lcB,l.mx,l.nrmY,'rgba(226,232,240,.10)');
-  tip(l.mx,l.nrmY,'d',2.5,'rgba(226,232,240,.24)');
-
-  // OUTPUT
-  box(l.bx+10,l.nrmY,l.bw-20,l.bs,COL.neutralFill,COL.neutralStroke,'RMSNorm(H⁽ᴸ⁾)',COL.neutralText,7);
-  ln(l.mx,l.nrmY+l.bs,l.mx,l.outY,'rgba(226,232,240,.10)');
-  tip(l.mx,l.outY,'d',3,'rgba(226,232,240,.28)');
-  box(l.bx,l.outY,l.bw,l.bh+2,'rgba(254,240,138,.08)','rgba(251,191,36,.36)','logits = RMSNorm(H⁽ᴸ⁾) · W_vocabᵀ','rgba(255,247,200,.90)',8);
-  lbl(l.mx,l.outY+l.bh+14,'W_vocab = E (tied weights)','rgba(255,247,200,.54)','center',5.5);
-
-  // REPLAY LOOP
-  const rpX=l.hpX+l.hpW+16;
-  pln([[l.hpX+l.hpW,l.hpT+96],[rpX,l.hpT+96],[rpX,l.inpY+l.bh/2],[l.br,l.inpY+l.bh/2]],'rgba(74,222,128,.22)',1.0,[5,3]);
-  tip(l.br,l.inpY+l.bh/2,'l',2.5,'rgba(74,222,128,.30)');
-  c.save();
-  c.translate(rpX+10,(l.hpT+l.inpY)/2+34);
-  c.rotate(-Math.PI/2);
-  lbl(0,0,'replay bypasses hippo feedback path; it re-runs tok_emb → columns → lm_head','rgba(220,252,231,.44)','center',5.0);
-  c.restore();
-
-  // particles
-  particles.forEach(p=>{p.update();p.draw();});
-
-  requestAnimationFrame(draw);
-}
-draw();
-
-window.toggleSpeed=function(){
-  speedMult=speedMult===1?2:speedMult===2?.5:1;
-  document.getElementById('btnSpeed').textContent=speedMult+'× Speed';
-};
-window.toggleLabels=function(){
-  showLabels=!showLabels;
-  document.getElementById('btnLabels').classList.toggle('active',showLabels);
-};
-})();
-</script>
+<script src="js/app.js"></script>
 </body>
 </html>
