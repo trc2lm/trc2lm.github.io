@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRC² · Thalamically Routed Cortical Columns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ══════════ TOKENS ══════════ */
+:root{
+  /* LIGHT — default */
+  --bg:#f5f2ec;
+  --bg-2:#ebe7df;
+  --ink:#111014;
+  --ink-dim:#55525e;
+  --ink-faint:#9c99a6;
+  --line:rgba(0,0,0,.09);
+  --line-hi:rgba(0,0,0,.18);
+  --panel:rgba(255,255,255,.55);
+  --panel-2:rgba(255,255,255,.35);
+  --grid-line:rgba(0,0,0,.04);
+  --star-a:rgba(96,165,250,.10);
+  --star-b:rgba(192,132,252,.08);
+  --star-c:rgba(225,29,46,.05);
+  --topbar-bg:linear-gradient(180deg,rgba(245,242,236,.9),rgba(245,242,236,0));
+  --cursor-ring-col:rgba(0,0,0,.55);
+  --plot-bg:rgba(255,255,255,.5);
+  --table-head:#efeae2;
+  --axis-ink:rgba(0,0,0,.65);
+  --axis-faint:rgba(0,0,0,.35);
+  --grid-axis:rgba(0,0,0,.08);
+
+  --cortex:#2563eb;
+  --thalamus:#b45309;
+  --hippo:#7c3aed;
+  --gate:#be185d;
+  --replay:#047857;
+  --trc2:#e11d2e;
+  --warn:#ef4444;
+
+  --serif:'Instrument Serif', 'Times New Roman', serif;
+  --sans:'Inter', system-ui, sans-serif;
+  --mono:'JetBrains Mono', ui-monospace, monospace;
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+[data-theme="dark"]{
+  --bg:#070711;
+  --bg-2:#0b0b18;
+  --ink:#f3f1ec;
+  --ink-dim:#a8a5b3;
+  --ink-faint:#5a576a;
+  --line:rgba(255,255,255,.08);
+  --line-hi:rgba(255,255,255,.16);
+  --panel:rgba(0,0,0,.3);
+  --panel-2:rgba(0,0,0,.4);
+  --grid-line:rgba(255,255,255,.018);
+  --star-a:rgba(96,165,250,.08);
+  --star-b:rgba(192,132,252,.06);
+  --star-c:rgba(255,59,59,.03);
+  --topbar-bg:linear-gradient(180deg,rgba(7,7,17,.85),rgba(7,7,17,0));
+  --cursor-ring-col:rgba(255,255,255,.6);
+  --plot-bg:rgba(0,0,0,.4);
+  --table-head:#0a0a14;
+  --axis-ink:rgba(255,255,255,.6);
+  --axis-faint:rgba(255,255,255,.32);
+  --grid-axis:rgba(255,255,255,.08);
+
+  --cortex:#60a5fa;
+  --thalamus:#fbbf24;
+  --hippo:#c084fc;
+  --gate:#f472b6;
+  --replay:#34d399;
+  --trc2:#ff3b3b;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;line-height:1.55;overflow-x:hidden;cursor:none}
+html{scroll-behavior:smooth}
+::selection{background:var(--trc2);color:#fff}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:none}
+
+/* ══════════ CUSTOM CURSOR ══════════ */
+.cursor,.cursor-ring{position:fixed;top:0;left:0;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);mix-blend-mode:difference}
+.cursor{width:6px;height:6px;background:#fff;border-radius:50%}
+.cursor-ring{width:34px;height:34px;border:1px solid var(--cursor-ring-col);border-radius:50%;transition:width .2s var(--ease),height .2s var(--ease),border-color .2s var(--ease)}
+.cursor-ring.hot{width:56px;height:56px;border-color:var(--trc2)}
+.cursor-trail{position:fixed;width:4px;height:4px;border-radius:50%;background:var(--trc2);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);opacity:.6}
+
+/* ══════════ FIXED BG ══════════ */
+.stars{position:fixed;inset:0;background:
+  radial-gradient(ellipse at 20% 10%, var(--star-a), transparent 50%),
+  radial-gradient(ellipse at 80% 80%, var(--star-b), transparent 50%),
+  radial-gradient(ellipse at 50% 50%, var(--star-c), transparent 60%);
+  z-index:-2;transition:background .5s}
+.grid-bg{position:fixed;inset:0;z-index:-1;opacity:.5;background-image:
+  linear-gradient(var(--grid-line) 1px, transparent 1px),
+  linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:64px 64px;mask-image:radial-gradient(ellipse at center, #000 20%, transparent 80%);transition:background-image .4s}
+
+/* ══════════ TOP BAR ══════════ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:500;padding:18px 32px;display:flex;align-items:center;gap:24px;backdrop-filter:blur(18px);background:var(--topbar-bg);border-bottom:1px solid transparent;transition:border-color .4s,background .4s}
+.theme-toggle{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);display:flex;align-items:center;justify-content:center;transition:all .25s;flex-shrink:0}
+.theme-toggle:hover{border-color:var(--line-hi);transform:rotate(25deg)}
+.theme-toggle svg{width:18px;height:18px}
+.theme-toggle .sun{display:none}
+[data-theme="dark"] .theme-toggle .sun{display:block}
+[data-theme="dark"] .theme-toggle .moon{display:none}
+.topbar.scrolled{border-color:var(--line)}
+.brand{font-family:var(--serif);font-size:1.4rem;letter-spacing:.01em;display:flex;align-items:center;gap:10px}
+.brand-dot{width:9px;height:9px;border-radius:50%;background:var(--trc2);box-shadow:0 0 20px var(--trc2);animation:heartbeat 1.6s infinite}
+@keyframes heartbeat{0%,100%{transform:scale(1);opacity:.9}20%{transform:scale(1.35);opacity:1}40%{transform:scale(.95);opacity:.8}}
+.nav{margin-left:auto;display:flex;gap:4px}
+.nav a{padding:8px 14px;border-radius:8px;font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);transition:all .25s}
+.nav a:hover{color:var(--ink);background:var(--line)}
+.nav .cta{background:var(--trc2);color:#fff;padding:8px 16px}
+.nav .cta:hover{background:#ff5555;color:#fff}
+
+/* ══════════ SECTION SHELL ══════════ */
+section{position:relative;padding:120px 32px}
+.wrap{max-width:1280px;margin:0 auto}
+.wrap-narrow{max-width:860px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:var(--mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--trc2);margin-bottom:18px}
+.eyebrow::before{content:'';width:28px;height:1px;background:var(--trc2)}
+.h1{font-family:var(--serif);font-size:clamp(3.5rem,9vw,8rem);line-height:.96;letter-spacing:-.03em;font-weight:400}
+.h2{font-family:var(--serif);font-size:clamp(2.2rem,5vw,4rem);line-height:1.02;letter-spacing:-.02em;font-weight:400}
+.h3{font-family:var(--serif);font-size:1.7rem;line-height:1.15;letter-spacing:-.01em}
+.lede{font-size:1.15rem;color:var(--ink-dim);max-width:640px;line-height:1.75}
+.body{font-size:1rem;color:var(--ink-dim);line-height:1.8}
+.body p+p{margin-top:16px}
+.serif-italic{font-family:var(--serif);font-style:italic}
+.num{font-family:var(--serif);font-feature-settings:'tnum';font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+
+/* ══════════ HERO ══════════ */
+.hero{min-height:100vh;padding-top:120px;display:grid;grid-template-rows:1fr auto;overflow:hidden;position:relative}
+#brainCanvas{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.hero-content{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:0 32px;width:100%;align-self:center}
+.hero-tag{display:inline-flex;align-items:center;gap:10px;padding:8px 16px;border:1px solid var(--line-hi);border-radius:100px;font-family:var(--mono);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);background:rgba(0,0,0,.4);backdrop-filter:blur(10px)}
+.hero-tag .pulse{width:6px;height:6px;border-radius:50%;background:var(--trc2);animation:heartbeat 1.6s infinite}
+.hero h1{margin-top:26px}
+.hero h1 .glow{background:linear-gradient(92deg,var(--trc2) 0%,#ff8a8a 40%,var(--thalamus) 75%,var(--hippo) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 30px rgba(255,59,59,.25))}
+.hero h1 .sup{font-size:.55em;vertical-align:top;line-height:1}
+.hero-sub{margin-top:28px;font-family:var(--serif);font-style:italic;font-size:clamp(1.25rem,2.3vw,1.8rem);color:var(--ink-dim);max-width:720px;line-height:1.35}
+.hero-meta{margin-top:44px;display:flex;flex-wrap:wrap;gap:28px;align-items:center;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;color:var(--ink-dim)}
+.hero-meta strong{color:var(--ink);font-weight:500}
+.hero-meta .sep{opacity:.3}
+.hero-foot{position:relative;z-index:2;padding:32px;display:flex;justify-content:space-between;align-items:center;max-width:1280px;margin:0 auto;width:100%}
+.hero-stats{display:flex;gap:40px}
+.hero-stat .val{font-family:var(--serif);font-size:2rem;color:var(--ink);line-height:1}
+.hero-stat .val.hot{color:var(--trc2)}
+.hero-stat .lbl{font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+.scroll-hint{display:flex;flex-direction:column;align-items:center;gap:10px;font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
+.scroll-hint::after{content:'';width:1px;height:46px;background:linear-gradient(var(--trc2),transparent);animation:scrollpulse 1.6s infinite}
+@keyframes scrollpulse{0%,100%{transform:scaleY(1);opacity:1}50%{transform:scaleY(.3);opacity:.3}}
+
+/* ══════════ TICKER ══════════ */
+.ticker{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:#05050c;padding:14px 0}
+.ticker-track{display:flex;gap:60px;animation:tick 60s linear infinite;white-space:nowrap;font-family:var(--mono);font-size:.78rem;color:var(--ink-dim);letter-spacing:.08em}
+.ticker-track span{display:inline-flex;align-items:center;gap:10px}
+.ticker-track .hot{color:var(--trc2);font-weight:600}
+.ticker-track .dot{width:4px;height:4px;border-radius:50%;background:var(--ink-faint)}
+@keyframes tick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ══════════ SECTION A: KEY NUMBERS MOSAIC ══════════ */
+.mosaic{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;margin-top:56px}
+.tile{border:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.005));border-radius:18px;padding:28px;position:relative;overflow:hidden;transition:all .4s var(--ease)}
+.tile:hover{border-color:var(--line-hi);transform:translateY(-3px)}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--trc2));transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
+.tile:hover::before{transform:scaleX(1)}
+.tile .kicker{font-family:var(--mono);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:14px;font-weight:600}
+.tile .big{font-family:var(--serif);font-size:clamp(2.8rem,5vw,4.5rem);line-height:.9;color:var(--ink);display:flex;align-items:baseline;gap:8px}
+.tile .big .unit{font-size:.3em;color:var(--ink-dim);letter-spacing:.05em}
+.tile.hot .big{color:var(--trc2)}
+.tile .desc{margin-top:18px;color:var(--ink-dim);font-size:.9rem;line-height:1.55}
+.tile .tag{display:inline-block;margin-top:14px;padding:4px 10px;border-radius:6px;background:var(--line);font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
+
+.tile.col-6{grid-column:span 6}
+.tile.col-4{grid-column:span 4}
+.tile.col-3{grid-column:span 3}
+.tile.col-8{grid-column:span 8}
+.tile.col-12{grid-column:span 12}
+@media(max-width:900px){.tile[class*="col-"]{grid-column:span 12}}
+
+/* vs comparison inside tile */
+.vs{display:flex;gap:18px;align-items:center;margin-top:20px}
+.vs .side{flex:1}
+.vs .side .n{font-family:var(--serif);font-size:2.2rem;line-height:1}
+.vs .side .l{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink-faint);margin-top:4px}
+.vs .arrow{font-family:var(--mono);font-size:1.5rem;color:var(--trc2)}
+.vs .win{color:var(--trc2)}
+
+/* ══════════ SECTION: LIVE STREAM SIMULATOR ══════════ */
+.stream-wrap{border:1px solid var(--line);border-radius:24px;padding:32px;background:var(--bg-2);margin-top:48px}
+.stream-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:16px}
+.stream-title{font-family:var(--serif);font-size:1.4rem;color:var(--ink)}
+.stream-controls{display:flex;gap:10px;flex-wrap:wrap}
+.chip{padding:8px 14px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink-dim);font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;transition:all .2s}
+.chip:hover{border-color:var(--line-hi);color:var(--ink)}
+.chip.active{background:var(--trc2);color:#fff;border-color:var(--trc2)}
+.chip.lab-on{border-color:var(--replay);color:var(--replay)}
+.chip.lab-off{opacity:.5}
+
+#streamCanvas{width:100%;height:420px;display:block;border-radius:14px;background:var(--bg-2);border:1px solid var(--line)}
+.stream-timeline{margin-top:18px;position:relative;padding:8px 0}
+.stream-bar{height:14px;border-radius:8px;background:var(--bg-2);position:relative;overflow:hidden;cursor:none;border:1px solid var(--line-hi)}
+.stream-bar .seg{position:absolute;top:0;bottom:0}
+.stream-bar .seg.c4{left:0;width:45.45%;background:linear-gradient(90deg,rgba(37,99,235,.45),rgba(37,99,235,.22))}
+.stream-bar .seg.wiki{left:45.45%;width:45.45%;background:linear-gradient(90deg,rgba(190,24,93,.35),rgba(190,24,93,.18))}
+.stream-bar .seg.gsm{left:90.9%;width:9.1%;background:linear-gradient(90deg,rgba(4,120,87,.45),rgba(4,120,87,.25))}
+.stream-bar .playhead{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--trc2);box-shadow:0 0 12px var(--trc2)}
+.stream-bar .playhead::before{content:'';position:absolute;top:-6px;left:-5px;width:12px;height:12px;border-radius:50%;background:var(--trc2);box-shadow:0 0 20px var(--trc2)}
+.stream-labels{display:flex;justify-content:space-between;margin-top:10px;font-family:var(--mono);font-size:.68rem;color:var(--ink-faint);letter-spacing:.08em}
+.stream-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-family:var(--mono);font-size:.72rem;color:var(--ink)}
+.stream-legend .it{display:flex;align-items:center;gap:8px}
+.stream-legend .sw{width:16px;height:3px;border-radius:2px}
+.stream-legend .sw.trc2{background:var(--trc2);box-shadow:0 0 8px var(--trc2)}
+
+.stream-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}
+@media(max-width:800px){.stream-metrics{grid-template-columns:repeat(2,1fr)}}
+.sm-tile{border:1px solid var(--line);border-radius:12px;padding:16px;text-align:left;transition:border-color .3s;background:var(--bg-2)}
+.sm-tile .ml{font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;color:var(--ink-dim);text-transform:uppercase;font-weight:600}
+.sm-tile .mv{font-family:var(--serif);font-size:1.8rem;margin-top:6px;line-height:1;transition:color .3s;color:var(--ink)}
+.sm-tile.active{border-color:var(--trc2)}
+.sm-tile.active .mv{color:var(--trc2)}
+
+/* ══════════ SECTION: ARCHITECTURE SCROLL ══════════ */
+.arch-sticky{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;position:relative}
+@media(max-width:1000px){.arch-sticky{grid-template-columns:minmax(0,1fr)}}
+.arch-viz-inner{position:sticky;top:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg-2);overflow:hidden;width:100%;min-width:0}
+#archCanvas{width:100%;max-width:100%;height:auto;display:block}
+.arch-steps{display:flex;flex-direction:column;gap:80px}
+.arch-step{opacity:.5;transition:opacity .5s;padding:22px 0}
+.arch-step.active{opacity:1}
+.arch-step .num{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--trc2)}
+.arch-step h3{font-family:var(--serif);font-size:2rem;line-height:1.1;margin-top:10px}
+.arch-step p{color:var(--ink-dim);margin-top:14px;line-height:1.8;font-size:.98rem}
+.arch-step .mono-eq{margin-top:18px;padding:14px 16px;border:1px solid var(--line-hi);border-radius:8px;background:var(--bg-2);font-family:var(--mono);font-size:.82rem;color:var(--ink);overflow-x:auto;white-space:nowrap}
+
+/* ══════════ SECTION: RADAR (native) ══════════ */
+.radar-block{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;margin-top:40px}
+@media(max-width:1000px){.radar-block{grid-template-columns:1fr}}
+#radarSvg{width:100%;max-width:560px;height:auto;aspect-ratio:1/1;display:block;margin:0 auto}
+.radar-models{display:flex;flex-direction:column;gap:8px}
+.rm-row{display:flex;align-items:center;gap:14px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;cursor:none;transition:all .2s}
+.rm-row:hover{border-color:var(--line-hi);background:rgba(255,255,255,.02)}
+.rm-row.hide{opacity:.28}
+.rm-sw{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.rm-name{font-family:var(--mono);font-size:.82rem;color:var(--ink)}
+.rm-row.trc2 .rm-name{color:var(--trc2);font-weight:600}
+.rm-scores{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--ink-faint)}
+
+/* ══════════ SECTION: HEATMAP ══════════ */
+.heat-wrap{margin-top:40px;border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2);overflow:auto}
+.heat-title{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px}
+.heat-tabs{display:flex;gap:6px}
+.heat-grid{display:grid;gap:3px;font-family:var(--mono);font-size:.78rem}
+.hcell{padding:10px 8px;text-align:center;border-radius:4px;transition:all .2s;min-width:70px}
+.hcell.label{background:transparent;color:var(--ink-dim);text-align:right;padding-right:12px;min-width:120px}
+.hcell.head{background:transparent;color:var(--ink-dim);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.hcell.trc2-row{color:#fff;font-weight:700;box-shadow:inset 0 0 0 2px var(--trc2)}
+.hcell.trc2-row.label{color:var(--trc2);box-shadow:none}
+
+/* ══════════ SECTION: ORDER ROULETTE ══════════ */
+.order-wrap{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:stretch;margin-top:40px}
+@media(max-width:900px){.order-wrap{grid-template-columns:1fr}}
+.order-pick{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.order-chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.obtn{padding:14px 18px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--ink);font-family:var(--mono);font-size:.88rem;letter-spacing:.08em;display:flex;align-items:center;gap:10px;transition:all .25s}
+.obtn:hover{border-color:var(--line-hi);transform:translateY(-2px)}
+.obtn.active{background:var(--trc2);color:#fff;border-color:var(--trc2);box-shadow:0 8px 30px rgba(255,59,59,.35)}
+.obtn .pill{padding:2px 8px;border-radius:4px;background:rgba(0,0,0,.25);font-size:.7rem}
+.order-viz{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.order-bar{margin-top:16px;position:relative;height:38px;border-radius:8px;background:var(--bg-2);overflow:hidden;border:1px solid var(--line-hi)}
+.order-bar .fill{position:absolute;top:0;bottom:0;left:0;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:var(--mono);font-size:.75rem;color:#fff;font-weight:600;transition:width .9s var(--ease),background .4s}
+.order-bar .fill.trc2{background:linear-gradient(90deg,var(--trc2),#ff7a7a)}
+.order-bar .fill.base{background:linear-gradient(90deg,#4a4a55,#6b6b7a)}
+.order-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);margin-top:6px;font-weight:600}
+.order-advantage{margin-top:22px;padding:18px;border:1px solid var(--trc2);border-radius:12px;background:color-mix(in oklch,var(--trc2) 8%,var(--bg-2));text-align:center}
+.order-advantage .big{font-family:var(--serif);font-size:3rem;color:var(--trc2);line-height:1}
+.order-advantage .lbl{font-family:var(--mono);font-size:.75rem;color:var(--ink-dim);margin-top:8px;letter-spacing:.08em;font-weight:600}
+
+/* ══════════ SECTION: ABLATION LAB ══════════ */
+.lab-wrap{margin-top:40px;display:grid;grid-template-columns:1fr 1.3fr;gap:28px;align-items:stretch}
+@media(max-width:1000px){.lab-wrap{grid-template-columns:1fr}}
+.lab-knobs{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.knob{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;display:flex;align-items:center;gap:16px;cursor:none;transition:all .25s;background:var(--bg)}
+.knob:hover{border-color:var(--line-hi)}
+.knob.on{border-color:currentColor}
+.knob.thal{color:var(--thalamus)}
+.knob.hippo{color:var(--hippo)}
+.knob-sw{width:52px;height:28px;border-radius:14px;background:#1a1a24;position:relative;flex-shrink:0;transition:background .3s;border:1px solid var(--line)}
+.knob-sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#5a576a;transition:all .3s}
+.knob.on .knob-sw{background:currentColor}
+.knob.on .knob-sw::after{left:27px;background:#0a0a14}
+.knob-lbl{flex:1}
+.knob-lbl .n{font-family:var(--serif);font-size:1.2rem;color:var(--ink)}
+.knob-lbl .d{font-family:var(--mono);font-size:.72rem;color:var(--ink-dim);letter-spacing:.06em;margin-top:2px}
+.lab-result{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--bg-2)}
+.lab-vals{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.lab-val{border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center;transition:all .4s;background:var(--bg-2)}
+.lab-val.best{border-color:var(--trc2);background:color-mix(in oklch,var(--trc2) 6%,var(--bg-2))}
+.lab-val .l{font-family:var(--mono);font-size:.62rem;color:var(--ink-dim);letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.lab-val .v{font-family:var(--serif);font-size:2rem;margin-top:4px;transition:color .4s;color:var(--ink)}
+.lab-val.best .v{color:var(--trc2)}
+#labCanvas{width:100%;height:220px;margin-top:18px;border-radius:10px;background:var(--bg-2);border:1px solid var(--line)}
+.lab-verdict{margin-top:16px;padding:16px;border-radius:10px;font-family:var(--mono);font-size:.82rem;line-height:1.6;color:var(--ink);background:color-mix(in oklch,var(--trc2) 6%,var(--bg-2));border-left:3px solid var(--trc2)}
+
+/* ══════════ DIVIDER ══════════ */
+.hr{margin:80px 0;display:flex;align-items:center;gap:18px}
+.hr::before,.hr::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.hr-glyph{font-family:var(--serif);font-style:italic;color:var(--ink-faint);font-size:1.2rem}
+
+/* ══════════ FOOTER ══════════ */
+footer{padding:80px 32px 40px;border-top:1px solid var(--line);margin-top:80px;background:#05050c}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;max-width:1280px;margin:0 auto}
+@media(max-width:800px){.foot-grid{grid-template-columns:1fr}}
+.foot-brand h4{font-family:var(--serif);font-size:2rem;line-height:1}
+.foot-brand p{color:var(--ink-dim);margin-top:12px;max-width:380px}
+.foot-col h5{font-family:var(--mono);font-size:.72rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:14px}
+.foot-col a{display:block;padding:4px 0;color:var(--ink-dim);transition:color .2s}
+.foot-col a:hover{color:var(--trc2)}
+.foot-bottom{max-width:1280px;margin:60px auto 0;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);flex-wrap:wrap;gap:12px}
+
+/* ══════════ REVEAL ══════════ */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.reveal.in{opacity:1;transform:translateY(0)}
+
+/* ══════════ MOBILE ══════════ */
+@media(max-width:768px){
+  html,body{cursor:auto}
+  .cursor,.cursor-ring,.cursor-trail{display:none}
+  section{padding:80px 20px}
+  .topbar{padding:14px 20px}
+  .nav{display:none}
+  .hero-foot{flex-direction:column;gap:30px;align-items:flex-start}
+  .arch-viz{position:static;height:360px}
+  .mosaic{grid-template-columns:repeat(6,1fr)}
+}
+</style>
+<script>
+  (function(){
+    const saved=localStorage.getItem('trc2-theme')||'light';
+    document.documentElement.setAttribute('data-theme',saved);
+  })();
+</script>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="grid-bg"></div>
+<div class="cursor" id="cur"></div>
+<div class="cursor-ring" id="curR"></div>
+
+<!-- ═══════════ TOP BAR ═══════════ -->
+<header class="topbar" id="topbar">
+  <div class="brand"><span class="brand-dot"></span> TRC²</div>
+  <nav class="nav">
+    <a href="#stream">Stream</a>
+    <a href="#arch">Architecture</a>
+    <a href="#radar">Radar</a>
+    <a href="#lab">Lab</a>
+    <a href="#order">Robustness</a>
+    <a href="#results">Results</a>
+    <a class="cta" href="https://arxiv.org/" target="_blank" rel="noopener">Read the paper ↗</a>
+  </nav>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+    <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+  </button>
+</header>
+
+<!-- ═══════════ HERO ═══════════ -->
+<header class="hero" id="hero">
+  <canvas id="brainCanvas"></canvas>
+
+  <div class="hero-content">
+    <div class="hero-tag"><span class="pulse"></span> <a href="https://arxiv.org/" target="_blank" rel="noopener" style="color:inherit">arXiv
+     ↗</a> · cs.LG</div>
+    <h1 class="h1">
+      The brain<br>
+      doesn't forget.<br>
+      <span class="glow">Neither does TRC<span class="sup">2</span>.</span>
+    </h1>
+    <p class="hero-sub">A decoder-only architecture where thalamic routing and a causal hippocampus make continual learning a property of the backbone — not a procedure bolted on top.</p>
+
+    <div class="hero-meta">
+      <span><strong>Anonymous Author</strong></span>
+      <span class="sep">·</span>
+    </div>
+  </div>
+
+  <div class="hero-foot">
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="val num hot">0.08</div><div class="lbl">TokAcc AUFC</div></div>
+      <div class="hero-stat"><div class="val num hot">0.44</div><div class="lbl">PPL AUFC</div></div>
+      <div class="hero-stat"><div class="val num">2.48×</div><div class="lbl">best-shuffle advantage</div></div>
+      <div class="hero-stat"><div class="val num">2.88B</div><div class="lbl">tokens · 4× V100</div></div>
+    </div>
+    <div class="scroll-hint">scroll</div>
+  </div>
+</header>
+
+<!-- ═══════════ TICKER ═══════════ -->
+<div class="ticker">
+  <div class="ticker-track">
+    <span class="hot">◆ TRC² dominates 5/5 task shuffles</span><span class="dot"></span>
+    <span>PPL AUFC <strong>0.44</strong> vs best baseline <strong>1.11</strong></span><span class="dot"></span>
+    <span class="hot">◆ 60% forgetting reduction on W→G→C</span><span class="dot"></span>
+    <span>GSM8K accuracy <strong>59.0%</strong></span><span class="dot"></span>
+    <span class="hot">◆ Thalamic router + hippocampus = part of the forward pass</span><span class="dot"></span>
+    <span>7 baselines · 3 corpora · 22k steps</span><span class="dot"></span>
+    <span class="hot">◆ TRC² dominates 5/5 task shuffles</span><span class="dot"></span>
+    <span>PPL AUFC <strong>0.44</strong> vs best baseline <strong>1.11</strong></span><span class="dot"></span>
+    <span class="hot">◆ 60% forgetting reduction on W→G→C</span><span class="dot"></span>
+    <span>GSM8K accuracy <strong>59.0%</strong></span><span class="dot"></span>
+    <span class="hot">◆ Thalamic router + hippocampus = part of the forward pass</span><span class="dot"></span>
+    <span>7 baselines · 3 corpora · 22k steps</span><span class="dot"></span>
+  </div>
+</div>
+
+<!-- ═══════════ SECTION: NUMBERS MOSAIC ═══════════ -->
+<section id="top-numbers">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">The headline</div>
+      <h2 class="h2">Same stream. Every baseline blows up.<br><span class="serif-italic" style="color:var(--trc2)">TRC² stays flat.</span></h2>
+      <p class="lede" style="margin-top:22px">A Transformer's perplexity on C4 collapses the moment it touches WikiText-103. TRC² keeps the whole forgetting curve near the floor — and the advantage compounds as the stream gets longer and more adversarial.</p>
+    </div>
+
+    <div class="mosaic">
+      <div class="tile col-6 hot reveal" style="--accent:var(--trc2)">
+        <div class="kicker">PPL AUFC @ 22k · lower is better</div>
+        <div class="vs">
+          <div class="side"><div class="n num">1.11</div><div class="l">best baseline<br>(MoE 1024)</div></div>
+          <div class="arrow win">→</div>
+          <div class="side"><div class="n num" style="color:var(--trc2)">0.44</div><div class="l">TRC² · ours<br>(226M, d768-l4)</div></div>
+        </div>
+        <div class="desc">A 60% cut in cumulative perplexity forgetting, at <em>half</em> the parameters of the best baseline.</div>
+      </div>
+
+      <div class="tile col-3 reveal" style="--accent:var(--hippo)">
+        <div class="kicker">BLEU AUFC</div>
+        <div class="big num" style="color:var(--hippo)">0.12</div>
+        <div class="desc">vs 0.74 for the best baseline. Token-level structure survives task switches.</div>
+      </div>
+
+      <div class="tile col-3 reveal" style="--accent:var(--thalamus)">
+        <div class="kicker">TokAcc AUFC</div>
+        <div class="big num" style="color:var(--thalamus)">0.08</div>
+        <div class="desc">vs 0.13 for the best baseline. Fine-grained accuracy is retained end-to-end.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--cortex)">
+        <div class="kicker">GSM8K accuracy</div>
+        <div class="big num" style="color:var(--cortex)">59.0<span class="unit">%</span></div>
+        <div class="desc">408M TRC² (d768-l8) beats every baseline at any scale up to 545M.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--replay)">
+        <div class="kicker">Best-shuffle advantage</div>
+        <div class="big num" style="color:var(--replay)">2.48<span class="unit">×</span></div>
+        <div class="desc">On the adversarial W→G→C stream, TRC²'s AUFC is 2.48× better than the best baseline.</div>
+      </div>
+
+      <div class="tile col-4 reveal" style="--accent:var(--gate)">
+        <div class="kicker">Shuffle range (min–max)</div>
+        <div class="big num" style="color:var(--gate)">0.29</div>
+        <div class="desc">TRC²'s AUFC barely moves across 5 random task orders. Every baseline doubles.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: LIVE STREAM SIMULATOR ═══════════ -->
+<section id="stream">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Live simulation</div>
+      <h2 class="h2">Watch it happen.<br><span class="serif-italic">Scrub the 22k-step training stream.</span></h2>
+      <p class="lede" style="margin-top:22px">Drag the playhead across 22,000 optimizer steps. Toggle any of the eight models on or off. Pick any of the five task orderings. The red line is TRC² — it barely leaves the floor. Every other model climbs the moment the stream shifts tasks.</p>
+    </div>
+
+    <div class="stream-wrap reveal">
+      <div class="stream-head">
+        <div class="stream-title">Cumulative forgetting · <span class="mono" style="color:var(--ink-faint);font-size:.9rem">AUFC(t)</span></div>
+        <div class="stream-controls" id="streamOrderBtns">
+          <button class="chip active" data-order="CGW">C→G→W</button>
+          <button class="chip" data-order="GCW">G→C→W</button>
+          <button class="chip" data-order="GWC">G→W→C</button>
+          <button class="chip" data-order="WCG">W→C→G</button>
+          <button class="chip" data-order="WGC">W→G→C</button>
+        </div>
+      </div>
+
+      <canvas id="streamCanvas"></canvas>
+
+      <div class="stream-timeline">
+        <div class="stream-bar" id="streamBar">
+          <div class="seg c4"></div>
+          <div class="seg wiki"></div>
+          <div class="seg gsm"></div>
+          <div class="playhead" id="playhead" style="left:50%"></div>
+        </div>
+        <div class="stream-labels">
+          <span>0</span><span>5k</span><span>10k</span><span>15k</span><span>20k</span><span>22k</span>
+        </div>
+      </div>
+
+      <div class="stream-legend" id="streamLegend"></div>
+
+      <div class="stream-metrics" id="streamMetrics">
+        <div class="sm-tile active"><div class="ml">Step</div><div class="mv num" id="mStep">11,000</div></div>
+        <div class="sm-tile active"><div class="ml">Current task</div><div class="mv" id="mTask" style="font-family:var(--serif)">WikiText-103</div></div>
+        <div class="sm-tile active"><div class="ml">TRC² AUFC</div><div class="mv num" id="mTrc">0.14</div></div>
+        <div class="sm-tile"><div class="ml">Best baseline AUFC</div><div class="mv num" id="mBase">0.68</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: ARCHITECTURE SCROLL ═══════════ -->
+<section id="arch">
+  <div class="wrap">
+    <div class="reveal" style="margin-bottom:60px">
+      <div class="eyebrow">Architecture</div>
+      <h2 class="h2">Three loops.<br><span class="serif-italic">One backbone.</span></h2>
+      <p class="lede" style="margin-top:22px">TRC² stacks cortical columns in the center and wraps them in two feedback loops. The thalamus shapes every column's attention from causal past state. The hippocampus writes, retrieves, and replays events around the cortical stream. Scroll to step through it.</p>
+    </div>
+
+    <div class="arch-sticky">
+      <div class="arch-viz-inner" id="archViz">
+        <canvas id="archCanvas" style="display:block"></canvas>
+        <div style="position:absolute;top:12px;right:12px;display:flex;gap:6px">
+          <button class="chip active" id="archBtnSpeed" onclick="window.archToggleSpeed&&window.archToggleSpeed()">1× Speed</button>
+          <button class="chip active" id="archBtnLabels" onclick="window.archToggleLabels&&window.archToggleLabels()">Labels</button>
+        </div>
+      </div>
+
+      <div class="arch-steps" id="archSteps">
+        <div class="arch-step active" data-step="0">
+          <div class="num">STAGE 01 · INPUT</div>
+          <h3>Tokens enter a single embedding.</h3>
+          <p>Weight-tied with the output head, no absolute position encodings. The hidden state <span class="mono">H⁽⁰⁾</span> flows down the center column — the only path that stays fully differentiable end-to-end.</p>
+          <div class="mono-eq">H⁽⁰⁾ = Dropout(E[x₁:T]) ∈ ℝᴮˣᵀˣᵈ</div>
+        </div>
+        <div class="arch-step" data-step="1">
+          <div class="num">STAGE 02 · EARLY CORTEX</div>
+          <h3>Columns compute. RoPE-GQA + routed SwiGLU MoE.</h3>
+          <p>Each column is the standard backbone: RMSNorm → grouped-query attention with RoPE → RMSNorm → MoE (top-k of E, plus a shared expert) → residual. Stable, known, fast.</p>
+          <div class="mono-eq">H⁽ℓ⁾ = H⁽ℓ⁻¹⁾ + A(U) + M(V)</div>
+        </div>
+        <div class="arch-step" data-step="2">
+          <div class="num">STAGE 03 · THALAMIC ROUTER</div>
+          <h3>Deep-layer activity becomes causal feedback.</h3>
+          <p>The thalamus compresses <span class="mono">C⁽ℓ⁾</span> to rank <em>r</em>, mixes a <em>local</em> focal path with a <em>diffuse past-only</em> average, gates by TD-surprise, then runs groupwise divisive TRN competition. The output <span class="mono">Z</span> modulates the next column's queries.</p>
+          <div class="mono-eq">Z⁽ℓ⁾ = TRN(G_focal · F_local + G_diffuse · F_past)</div>
+        </div>
+        <div class="arch-step" data-step="3">
+          <div class="num">STAGE 04 · HIPPOCAMPAL MEMORY</div>
+          <h3>Read now. Write later. Never cheat causality.</h3>
+          <p>Content-addressable exact top-k reads on <span class="mono">H⁽ℓᵢₙⱼ⁾</span>. A fast/slow TD critic emits surprise. Writes are <em>stashed</em> during the forward pass and flushed only after backward — so the read at step t can never see its own future. Replay samples from past chunks only.</p>
+          <div class="mono-eq">write(t) = δ_fast − δ_slow  ·  flush_after_backward()</div>
+        </div>
+        <div class="arch-step" data-step="4">
+          <div class="num">STAGE 05 · FEEDBACK GATE</div>
+          <h3>Two signals merge. The late stack reads one input.</h3>
+          <p>A sigmoid gate combines detached cortical state with the memory readout to produce <span class="mono">F_hip</span>, which is added to the carried thalamic signal at a single Σ node. Late columns never see memory directly — only the merged side-input.</p>
+          <div class="mono-eq">F_hip = σ(a) · W_hip→thal(G ⊙ M)</div>
+        </div>
+        <div class="arch-step" data-step="5">
+          <div class="num">STAGE 06 · LATE CORTEX → LOGITS</div>
+          <h3>Main hidden state continues. Side-input shapes attention.</h3>
+          <p>Late columns keep the column-to-column thalamic loop and receive the merged thalamus+hippo signal as Q-modulation. Final RMSNorm, tied lm_head, logits out. Replay bypasses all feedback paths — it just re-runs the embedding → columns → lm_head bus.</p>
+          <div class="mono-eq">logits = RMSNorm(H⁽ᴸ⁾) · Eᵀ</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ DIVIDER ═══════════ -->
+<div class="wrap"><div class="hr"><span class="hr-glyph">§</span></div></div>
+
+<!-- ═══════════ SECTION: RADAR ═══════════ -->
+<section id="radar">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Multi-metric comparison</div>
+      <h2 class="h2">Outer is better.<br><span class="serif-italic">TRC² owns the hull.</span></h2>
+      <p class="lede" style="margin-top:22px">Best configuration per architecture. Perplexity axes are inverted and log-scaled. Click any model to toggle. The red hexagon is TRC² (408M, d<sub>m</sub>=768, n<sub>b</sub>=8).</p>
+    </div>
+
+    <div class="radar-block reveal">
+      <svg id="radarSvg" viewBox="-300 -300 600 600"></svg>
+      <div class="radar-models" id="radarLegend"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: HEATMAP ═══════════ -->
+<section id="heat">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Retention across shuffles</div>
+      <h2 class="h2">Pick any ordering.<br><span class="serif-italic">The red row still wins.</span></h2>
+      <p class="lede" style="margin-top:22px">AUFC at 22k across five task-sequence shuffles. Dark cells are bad (lots of forgetting). TRC² is the only row where every cell stays cool.</p>
+    </div>
+
+    <div class="heat-wrap reveal">
+      <div class="heat-title">
+        <div class="stream-title" id="heatTitle">Perplexity AUFC · lower is better</div>
+        <div class="heat-tabs">
+          <button class="chip active" data-metric="ppl">PPL</button>
+          <button class="chip" data-metric="bleu">BLEU</button>
+          <button class="chip" data-metric="tok">TokAcc</button>
+        </div>
+      </div>
+      <div class="heat-grid" id="heatGrid"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: ORDER ROULETTE ═══════════ -->
+<section id="order">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Order-robustness lab</div>
+      <h2 class="h2">Shuffle the stream.<br><span class="serif-italic">Pick a stress test.</span></h2>
+      <p class="lede" style="margin-top:22px">Every continual-learning paper shows one ordering. We show all five. Pick an adversary.</p>
+    </div>
+
+    <div class="order-wrap">
+      <div class="order-pick reveal">
+        <div class="stream-title">Choose a task shuffle</div>
+        <div class="order-chips" id="orderChips">
+          <button class="obtn active" data-o="CGW">C→G→W <span class="pill">1.98×</span></button>
+          <button class="obtn" data-o="GCW">G→C→W <span class="pill">1.84×</span></button>
+          <button class="obtn" data-o="GWC">G→W→C <span class="pill">1.04×</span></button>
+          <button class="obtn" data-o="WCG">W→C→G <span class="pill">1.20×</span></button>
+          <button class="obtn" data-o="WGC">W→G→C <span class="pill">2.48×</span></button>
+        </div>
+        <p class="body" style="margin-top:22px;font-size:.9rem">The pill shows how much better TRC² is than the best baseline for that specific ordering. Revisiting a task late in the stream (W→G→C) is where every baseline suffers most — and where TRC² wins biggest.</p>
+      </div>
+
+      <div class="order-viz reveal">
+        <div class="stream-title">Head-to-head · <span class="mono" style="color:var(--ink-faint);font-size:.85rem">PPL AUFC @ 22k</span></div>
+
+        <div style="margin-top:24px">
+          <div class="order-label"><span>TRC² · ours</span><span class="num" id="ordTrc">0.46</span></div>
+          <div class="order-bar"><div class="fill trc2" id="ordTrcBar" style="width:24%">0.46</div></div>
+        </div>
+
+        <div style="margin-top:20px">
+          <div class="order-label"><span id="ordBaseName">Best baseline · FALCON</span><span class="num" id="ordBase">0.91</span></div>
+          <div class="order-bar"><div class="fill base" id="ordBaseBar" style="width:48%">0.91</div></div>
+        </div>
+
+        <div class="order-advantage">
+          <div class="big num" id="ordAdvBig">1.98×</div>
+          <div class="lbl"><span id="ordAdvPct">49%</span> less forgetting than the strongest baseline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: ABLATION LAB ═══════════ -->
+<section id="lab">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Ablation lab</div>
+      <h2 class="h2">Turn the knobs.<br><span class="serif-italic">See what each loop actually does.</span></h2>
+      <p class="lede" style="margin-top:22px">Both switches off is a vanilla MoE backbone. Hippocampus alone helps retention but drifts. Thalamus alone is competitive at endpoints but forgets. Both together is TRC². The numbers below are real Table 3 entries from the paper.</p>
+    </div>
+
+    <div class="lab-wrap">
+      <div class="lab-knobs reveal">
+        <div class="stream-title">Components</div>
+        <div class="knob thal on" id="knobThal">
+          <div class="knob-sw"></div>
+          <div class="knob-lbl"><div class="n">Thalamic router</div><div class="d">Causal Q-modulation · TRN competition</div></div>
+        </div>
+        <div class="knob hippo on" id="knobHippo">
+          <div class="knob-sw"></div>
+          <div class="knob-lbl"><div class="n">Hippocampal memory</div><div class="d">TD surprise · deferred write · replay</div></div>
+        </div>
+        <div class="lab-verdict" id="labVerdict">Full TRC². Best retention profile across all three AUFC metrics — worst throughput.</div>
+      </div>
+
+      <div class="lab-result reveal">
+        <div class="stream-title">AUFC @ 22k · <span class="mono" style="font-size:.85rem;color:var(--ink-faint)" id="labConfig">thal ✓ · hippo ✓</span></div>
+        <div class="lab-vals">
+          <div class="lab-val best" id="labPpl"><div class="l">PPL AUFC</div><div class="v num">0.44</div></div>
+          <div class="lab-val best" id="labBleu"><div class="l">BLEU AUFC</div><div class="v num">0.12</div></div>
+          <div class="lab-val best" id="labTok"><div class="l">TokAcc AUFC</div><div class="v num">0.08</div></div>
+        </div>
+        <canvas id="labCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ SECTION: RESULTS TABLE ═══════════ -->
+<section id="results">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="eyebrow">Full results</div>
+      <h2 class="h2">The raw numbers.<br><span class="serif-italic">No spin.</span></h2>
+      <p class="lede" style="margin-top:22px">Task-boundary scores at 10k/20k/22k across every model × every size. Best in column highlighted. TRC² rows in red.</p>
+    </div>
+
+    <div class="heat-wrap reveal" style="margin-top:40px;padding:0">
+      <div style="overflow-x:auto">
+        <table id="bigTable" style="width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.78rem;min-width:720px">
+          <thead>
+            <tr style="background:#0a0a14">
+              <th style="padding:14px 12px;text-align:left;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Model</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Params</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">C4 ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Wiki ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">GSM ↓</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">Wiki BLEU ↑</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">GSM % ↑</th>
+              <th style="padding:14px 12px;text-align:right;color:var(--ink-dim);font-weight:500;letter-spacing:.1em;text-transform:uppercase;font-size:.68rem;border-bottom:1px solid var(--line)">PPL AUFC ↓</th>
+            </tr>
+          </thead>
+          <tbody id="bigTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer id="paper">
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <h4>TRC<sup style="font-size:.6em">2</sup> — Thalamically Routed Cortical Columns</h4>
+      <p>Efficient continual learning in language models via biologically grounded sparse routing and fast correction.</p>
+    </div>
+    <div class="foot-col">
+      <h5>Paper</h5>
+      <a href="https://arxiv.org/">arXiv preprint ↗</a>
+      <a href="https://api.wandb.ai/">W&B training logs ↗</a>
+      <a href="https://trc2lm.github.io">Project site ↗</a>
+    </div>
+    <div class="foot-col">
+      <h5>Author</h5>
+      <a href="https://trc2lm.github.io">Anonymous Author</a>
+      <a href="mailto:anonymous@anonymous">anonymous@anonymous.com</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <span>© 2026 · Anonymous Author · preprint</span>
+  </div>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
