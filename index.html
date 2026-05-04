@@ -228,10 +228,10 @@ section{position:relative;padding:120px 32px}
 .sm-tile.active .mv{color:var(--trc2)}
 
 /* ══════════ SECTION: ARCHITECTURE SCROLL ══════════ */
-.arch-sticky{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;position:relative}
-@media(max-width:1000px){.arch-sticky{grid-template-columns:1fr}}
-.arch-viz-inner{position:sticky;top:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg-2);overflow:hidden;width:100%}
-#archCanvas{width:100%;height:auto;display:block}
+.arch-sticky{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start;position:relative}
+@media(max-width:1000px){.arch-sticky{grid-template-columns:minmax(0,1fr)}}
+.arch-viz-inner{position:sticky;top:20px;border:1px solid var(--line);border-radius:18px;background:var(--bg-2);overflow:hidden;width:100%;min-width:0}
+#archCanvas{width:100%;max-width:100%;height:auto;display:block}
 .arch-steps{display:flex;flex-direction:column;gap:80px}
 .arch-step{opacity:.5;transition:opacity .5s;padding:22px 0}
 .arch-step.active{opacity:1}
